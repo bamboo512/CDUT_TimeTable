@@ -1,4 +1,5 @@
-# CDUT_Calendar
+# CDUT_TimeTable
+
 能直接从 CDUT 新版教务系统导入课表进日历的工具。
 
 ## 介绍
@@ -54,13 +55,17 @@ python main.py
 
 ### 未来的计划
 
-- [ ] 购买服务器并搭建日历订阅服务器（WebCal Server）。
-> 日历订阅最值得关注的特性，或许是拥有自动同步日程的能力。
+-   [ ] 添加课程的学分、学时、类型（理论还是时间）信息。
+
+- [ ] 购买服务器并搭建 **日历订阅** 服务器（WebCal Server）。
+> 日历订阅最值得关注的特性，或许是拥有 **自动同步日程** 的能力。
 >
 > 只需要在日历输入订阅链接，日历就能以最快的速度自动同步教务系统课程表的变更。
 >
-> 在下目前的构思是，服务器每隔两天从教务处获取最新课表，并更新日历订阅。得益于日历订阅的自动同步能力，在本地的日历程序即可始终同步教务系统课表的最新更改。
-但即便是这样，也仍然面临一个很严肃的问题：如果想要采用日历订阅，那么在云服务器（或者云数据库）就必须至少保留用户登录的 Cookie 信息。尽管我们承诺不会对用户隐私采取任何越界行为，但
+> 我目前的构思是，服务器每隔两天从教务处获取最新课表，并更新日历订阅。得益于日历订阅的自动同步能力，在本地的日历程序即可始终同步教务系统课表的最新更改。
+> 但即便是这样，也仍然面临一个很严肃的问题：如果想要采用日历订阅，那么在云服务器（或者云数据库）就必须至少保留用户登录的 Cookie 信息。如何确保掌握数据库权限的人绝不会越界呢？这是个恒久不衰的商业道德问题。
+>
+> 你的隐私，当由你全权管控。我深知保护用户隐私的重要性与必要性，我也有必要在此承诺，绝不会窥探阁下的任何隐私。
 
 
 
@@ -68,7 +73,7 @@ python main.py
 
 ### 免责声明
 
-此程序仅供阁下个人导出教务系统课程表的用途，禁止商用。
+此程序仅供阁下个人导出教务系统课程表的用途，**禁止商用**。
 
 技术本无罪，如遇任何法律纠纷，作者对代码的行为以及可能产生的任何后果不负任何责任。
 
@@ -101,6 +106,5 @@ python main.py
 ### 参考资料
 
 1.   [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545). iCalendar 标准的官方文档。
-2.   [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/) 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
-3.   [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/) 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。
-
+2.   [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/). 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
+3.   [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/). 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。
