@@ -89,7 +89,9 @@ def list2ics(classList):
 
 # 更改 ics 部分格式，使其排版更合理
 def prettify(calendar):
-    return calendar.to_ical().decode("utf-8").replace('\,', ',').strip()
+    # 使用 _.replace("\n\n","\n")
+    # 修复 Windows 下运行，ics 文件中每一行都存在两个换行符，导致无法导入部分日历的问题。
+    return calendar.to_ical().decode("utf-8").replace('\,', ',').replace('\n\n', '\n').strip()
 
 
 # ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
