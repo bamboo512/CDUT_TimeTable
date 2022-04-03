@@ -82,22 +82,25 @@ def list2ics(classList):
         # 将此 Event 添加到 Calendar
         calendar.add_component(event)
 
-    with open(file="TimeTable.ics", mode="w+", encoding="UTF-8") as icsFile:
+    with open(file="TimeTable.ics", mode="wb+") as icsFile:
+        # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
+        # 阻止 ics 文件的换行符变成 \r\n，导致空行问题
         icsFile.write(prettify(calendar))
     print("生成 ics 文件成功")
 
 
 # 更改 ics 部分格式，使其排版更合理
 def prettify(calendar):
-    # 使用 _.replace("\n\n","\n")
+    # 使用 bytes() 将 str 转换为 bytes
     # 修复 Windows 下运行，ics 文件中每一行都存在两个换行符，导致无法导入部分日历的问题。
-    return calendar.to_ical().decode("utf-8").replace('\,', ',').replace('\n\n', '\n').strip()
+    return bytes(calendar.to_ical().decode("utf-8").replace('\,', ',').strip(), encoding="utf-8")
 
 
 # ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
 def getPreCodeAndCookies():
     baseURL = "https://jw.cdut.edu.cn"
-    response = requests.post(baseURL+"/Logon.do?method=logon&flag=sess")
+    response = requests.post(
+        baseURL+"/Logon.do?method=logon&flag=sess")
     scode, sxh = response.text.split("#")
     cookies = response.cookies
 
