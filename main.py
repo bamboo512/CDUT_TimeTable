@@ -103,11 +103,11 @@ def getPreCodeAndCookies():
 
 
 def getCookies(userName: str = None, password: str = None) -> dict:
-    with open("cookies.json", "w+") as f:
-        if f.read() not in ["", None]:
-            print("读取 cookies 成功")
-            cookies = json.load(f)
-            return cookies
+    # with open("cookies.json", "w+") as f:
+    #     if f.read() not in ["", None]:
+    #         print("读取 cookies 成功")
+    #         cookies = json.load(f)
+    #         return cookies
     if userName is None or password is None:
         print("请输入用户名和密码")
         exit(0)
@@ -144,8 +144,9 @@ def getCookies(userName: str = None, password: str = None) -> dict:
     if response.url == "https://jw.cdut.edu.cn/jsxsd/framework/xsMainV.htmlx":
 
         newCookie = {**cookies, **session.cookies}  # 合并两个 Cookie
-        with open("cookies.json", "w") as f:
-            json.dump(newCookie, f)
+        # with open("cookies.json", "w") as f:
+        #     json.dump(newCookie, f)
+
         # print(newCookie)
         print("获取 Cookie 成功")
         return newCookie

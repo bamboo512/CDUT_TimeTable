@@ -26,17 +26,18 @@ pip install -r requirements.txt
 ```
 
 4  在 account.json 输入你的学号与密码。
-这个密码可能与砚湖易办的不同，具体请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码好像是身份证后六位。
+这个密码可能与砚湖易办的不同，具体请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
 
 5  运行 main.py。执行以下代码：
+
 ```Shell
 python main.py
 ```
 
-6  导入 ics 进日历。如果不出意料，在文件夹下会生成 TimeTable.ics 文件。
-使用日历打开此 ics 文件即可导入课表信息。
+6  导入 ics 进日历。如果一切正常，在项目文件夹下会生成 TimeTable.ics 文件。
+使用日历打开此 ics 文件，即可导入课表信息。
 
-不同操作系统、不同日历软件导入 ics 文件的流程，请参考 **此文档** -> **额外的信息** -> **如何导入到日历？**。
+不同平台导入 ics 文件的流程，请参考 **此文档** -> **额外的信息** -> **如何导入到日历？**。
 
 
 
@@ -55,7 +56,7 @@ python main.py
 
 ### 未来的计划
 
--   [ ] 添加课程的学分、学时、类型（理论还是时间）信息。
+-   [ ] 添加课程的学分、学时、类型（理论或实践）信息。
 
 - [ ] 购买服务器并搭建 **日历订阅** 服务器（WebCal Server）。
 > 日历订阅最值得关注的特性，或许是拥有 **自动同步日程** 的能力。
@@ -106,5 +107,5 @@ python main.py
 ### 参考资料
 
 1.   [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545). iCalendar 标准的官方文档。
-2.   [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/). 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
-3.   [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/). 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。
+2.   [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/) 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
+3.   [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/) 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。
