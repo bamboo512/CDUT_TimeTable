@@ -165,8 +165,8 @@ def getHTML(userName=None, password=None) -> str:
 
     cookies = getCookies(userName, password)
     response = requests.get(url=url, cookies=cookies)
-
-    html = re.sub("<br>", "<br />", response.text)
+    html = response.text
+    # html = re.sub("<br>", "<br />", response.text)
     # 不然 _.children 会把一格中的第二、三、... 节课，用 <br></br> 包裹起来，成为一个子元素，不便于使用偏移量分析所有课程
     print("获取课表 HTML 表格成功")
     return html
@@ -194,18 +194,35 @@ def parseHTML(html):
                 day += 1
                 continue
 
-            htmlCourseList = list(course.children)
+            # print(course)
+            teacher = [item.text for item in course.findAll(
+                "font", title="教师")]
+            location = [item.text for item in course.findAll(
+                "font", title="教室")]
+            relativeTime = [item.text for item in course.findAll(
+                "font", title="周次(节次)")]
+            detail = [item.text for item in course.findAll(
+                "font", attrs={"name": "xsks"})]
+            # print(detail)
 
-            # 获取 div.kbcontent 的所有子元素组成的列表，容易发现
-            # 相似的值，可以通过偏移量（观察得出是 16）获取。
-            for i in range(len(htmlCourseList)//16+1):
+            name = []
+            listOfChildren = list(course.children)
+            for (i, e) in enumerate(listOfChildren):
+                if i == 0:
+                    name.append(e)
+                elif e == "---------------------":
+                    name.append(listOfChildren[i+2])
+                else:
+                    continue
+            # print(name)
+
+            for i in range(len(name)):
                 classInfo = {
-                    "name": htmlCourseList[i*16],
-                    "type": htmlCourseList[i*16+2],
-                    "teacher": htmlCourseList[i*16+4].text,
-                    "relativeTime": htmlCourseList[i*16+6].text,
-                    "location": htmlCourseList[i*16+9].text,
-                    "detail": htmlCourseList[i*16+13].text,
+                    "name": name[i],
+                    "teacher": teacher[i],
+                    "relativeTime": relativeTime[i],
+                    "location": location[i],
+                    "detail": detail[i],
                     "day": day,
                 }
                 classList.append(classInfo)
@@ -239,7 +256,7 @@ def parseTime(relativeTime):
     indexInADay = relativeTime.split('(周)')[1]
 
     # ! 处理周
-    weekList = set()
+    setOfWeek = set()
     regex_1 = re.compile(r'\b\d+-\d+\b')
     regex_2 = re.compile(r'\d+')
 
@@ -253,111 +270,116 @@ def parseTime(relativeTime):
         start = int(e.split('-')[0])
         end = int(e.split('-')[1])
         for i in range(start, end+1):
-            weekList.add(i)
+            setOfWeek.add(i)
     for e in group2:
-        weekList.add(int(e))
+        setOfWeek.add(int(e))
 
     # ! 处理节数
     regex_3 = re.compile(r'\d+')
     group3 = regex_3.findall(indexInADay)
-    listOfTime = {int(e) for e in group3}
+    setOfTime = {int(e) for e in group3}
 
-    return(weekList, listOfTime)
+    return(setOfWeek, setOfTime)
 
 
 def getDetailedClassList(classList):
     detailedClassList = []
     for e in classList:
-        weekList, listOfTime = parseTime(e['relativeTime'])
+        setOfWeek, setOfTime = parseTime(e['relativeTime'])
+        # print(setOfWeek, setOfTime)
 
-        for week in weekList:
+        for week in setOfWeek:
 
-            copyOfListOfTime = listOfTime.copy()  # 需要浅拷贝，因为后面会改变值
-            while len(copyOfListOfTime) > 0:
+            copyOfSetOfTime = setOfTime.copy()  # 需要浅拷贝，因为后面会改变值
+            while len(copyOfSetOfTime) > 0:
 
                 begin, end = 1, 2
-                if copyOfListOfTime & {1, 2, 3, 4} == {1, 2, 3, 4}:
+                if copyOfSetOfTime & {1, 2, 3, 4} == {1, 2, 3, 4}:
                     begin = 1
                     end = 4
-                    copyOfListOfTime -= {1, 2, 3, 4}
-                elif copyOfListOfTime & {5, 6, 7, 8} == {5, 6, 7, 8}:
+                    copyOfSetOfTime -= {1, 2, 3, 4}
+                elif copyOfSetOfTime & {5, 6, 7, 8} == {5, 6, 7, 8}:
                     begin = 5
                     end = 8
-                    copyOfListOfTime -= {5, 6, 7, 8}
-                elif copyOfListOfTime & {9, 10, 11} == {9, 10, 11}:
+                    copyOfSetOfTime -= {5, 6, 7, 8}
+                elif copyOfSetOfTime & {9, 10, 11} == {9, 10, 11}:
                     begin = 9
                     end = 11
-                    copyOfListOfTime -= {9, 10, 11}
-                elif copyOfListOfTime & {9, 10} == {9, 10}:
+                    copyOfSetOfTime -= {9, 10, 11}
+                elif copyOfSetOfTime & {9, 10} == {9, 10}:
                     begin = 9
                     end = 10
-                    copyOfListOfTime -= {9, 10}
-                elif copyOfListOfTime & {1, 2} == {1, 2}:
+                    copyOfSetOfTime -= {9, 10}
+                elif copyOfSetOfTime & {1, 2} == {1, 2}:
                     begin = 1
                     end = 2
-                    copyOfListOfTime -= {1, 2}
-                elif copyOfListOfTime & {3, 4} == {3, 4}:
+                    copyOfSetOfTime -= {1, 2}
+                elif copyOfSetOfTime & {3, 4} == {3, 4}:
                     begin = 3
                     end = 4
-                    copyOfListOfTime -= {3, 4}
-                elif copyOfListOfTime & {5, 6} == {5, 6}:
+                    copyOfSetOfTime -= {3, 4}
+                elif copyOfSetOfTime & {5, 6} == {5, 6}:
                     begin = 5
                     end = 6
-                    copyOfListOfTime -= {5, 6}
-                elif copyOfListOfTime & {7, 8} == {7, 8}:
+                    copyOfSetOfTime -= {5, 6}
+                elif copyOfSetOfTime & {7, 8} == {7, 8}:
                     begin = 7
                     end = 8
-                    copyOfListOfTime -= {7, 8}
-                elif copyOfListOfTime & {1} == {1}:
+                    copyOfSetOfTime -= {7, 8}
+                elif copyOfSetOfTime & {1} == {1}:
                     begin = 1
                     end = 1
-                    copyOfListOfTime -= {1}
-                elif copyOfListOfTime & {2} == {2}:
+                    copyOfSetOfTime -= {1}
+                elif copyOfSetOfTime & {2} == {2}:
                     begin = 2
                     end = 2
-                    copyOfListOfTime -= {2}
-                elif copyOfListOfTime & {3} == {3}:
+                    copyOfSetOfTime -= {2}
+                elif copyOfSetOfTime & {3} == {3}:
                     begin = 3
                     end = 3
-                    copyOfListOfTime -= {3}
-                elif copyOfListOfTime & {4} == {4}:
+                    copyOfSetOfTime -= {3}
+                elif copyOfSetOfTime & {4} == {4}:
                     begin = 4
                     end = 4
-                    copyOfListOfTime -= {4}
-                elif copyOfListOfTime & {5} == {5}:
+                    copyOfSetOfTime -= {4}
+                elif copyOfSetOfTime & {5} == {5}:
                     begin = 5
                     end = 5
-                    copyOfListOfTime -= {5}
-                elif copyOfListOfTime & {6} == {6}:
+                    copyOfSetOfTime -= {5}
+                elif copyOfSetOfTime & {6} == {6}:
                     begin = 6
                     end = 6
-                    copyOfListOfTime -= {6}
-                elif copyOfListOfTime & {7} == {7}:
+                    copyOfSetOfTime -= {6}
+                elif copyOfSetOfTime & {7} == {7}:
                     begin = 7
                     end = 7
-                    copyOfListOfTime -= {7}
-                elif copyOfListOfTime & {8} == {8}:
+                    copyOfSetOfTime -= {7}
+                elif copyOfSetOfTime & {8} == {8}:
                     begin = 8
                     end = 8
-                    copyOfListOfTime -= {8}
-                elif copyOfListOfTime & {9} == {9}:
+                    copyOfSetOfTime -= {8}
+                elif copyOfSetOfTime & {9} == {9}:
                     begin = 9
                     end = 9
-                    copyOfListOfTime -= {9}
-                elif copyOfListOfTime & {10} == {10}:
+                    copyOfSetOfTime -= {9}
+                elif copyOfSetOfTime & {10} == {10}:
                     begin = 10
                     end = 10
-                    copyOfListOfTime -= {10}
-                elif copyOfListOfTime & {11} == {11}:
+                    copyOfSetOfTime -= {10}
+                elif copyOfSetOfTime & {11} == {11}:
                     begin = 11
                     end = 11
-                    copyOfListOfTime -= {11}
+                    copyOfSetOfTime -= {11}
+
+                # 很不明白为什么会有 12 节，但是有的课表确实存在。
+                elif copyOfSetOfTime & {12} == {12}:
+                    copyOfSetOfTime -= {12}
+
                 # print(begin, end)
                 detailedClassList.append({
                     "name": e['name'],
                     # "type": e['type'],
                     "teacher": e['teacher'],
-                    # "relativeTime": e['relativeTime'],
                     "location": e['location'],
                     # "detail": e['detail'],
                     "累计开学天数": (week-1)*7+e['day'],
