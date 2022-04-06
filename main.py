@@ -166,7 +166,7 @@ def getHTML(userName=None, password=None) -> str:
     cookies = getCookies(userName, password)
     response = requests.get(url=url, cookies=cookies)
     html = response.text
-    # html = re.sub("<br>", "<br />", response.text)
+    html = re.sub("<br>", "<br />", response.text)
     # 不然 _.children 会把一格中的第二、三、... 节课，用 <br></br> 包裹起来，成为一个子元素，不便于使用偏移量分析所有课程
     print("获取课表 HTML 表格成功")
     return html
