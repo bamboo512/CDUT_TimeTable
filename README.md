@@ -9,13 +9,14 @@
 
 
 
-| ![97624051-112E-4DEE-A33D-67B175BF462B](images/97624051-112E-4DEE-A33D-67B175BF462B.png) | ![95BEEA46-FE38-4007-9C7D-FB8F58569EEB_1_102_o](images/95BEEA46-FE38-4007-9C7D-FB8F58569EEB_1_102_o.jpeg) |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![97624051-112E-4DEE-A33D-67B175BF462B](images/97624051-112E-4DEE-A33D-67B175BF462B.png)                  | ![95BEEA46-FE38-4007-9C7D-FB8F58569EEB_1_102_o](images/95BEEA46-FE38-4007-9C7D-FB8F58569EEB_1_102_o.jpeg) |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | ![977BCF28-68F5-4C08-B2D1-1C6A23D9CD04_1_102_o](images/977BCF28-68F5-4C08-B2D1-1C6A23D9CD04_1_102_o.jpeg) | ![A233B11D-E506-47BC-8678-A3E04AA66459_1_102_o](images/A233B11D-E506-47BC-8678-A3E04AA66459_1_102_o.jpeg) |
 
 
 
 ### 使用指北
+
 1  克隆此项目到本地。
 
 2  确保你的电脑已安装 Python 3+ 与 pip 包管理器。
@@ -26,7 +27,10 @@ pip install -r requirements.txt
 ```
 
 4  在 account.json 输入你的学号与密码。
-这个密码可能与砚湖易办的不同，具体请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
+
+>   请特别关注：首次登录新教务处网站时会要求更改密码，请更改密码后再次尝试使用此工具。
+
+这个密码可能与砚湖易办的不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
 
 5  运行 main.py。执行以下代码：
 
@@ -82,30 +86,44 @@ python main.py
 
 ### 如何导入日历？
 
-#### iOS/iPadOS
+<details>
+<summary>Android</summary>
+在文件管理器，或者在分享界面使用第三方应用打开，选择系统自带日历即可导入。
+> 受测试支持导入 ics 日历文件的，基于 Android 的操作系统包括小米 MIUI、OPPO ColorOS、华为 HarmonyOS、魅族 Flyme。
+</details>
 
-方法 1
+<details>
+<summary>macOS/Windows</summary>
 
-使用系统自带邮件 App，发送含有 ics 文件的邮件给自己。待收到邮件后，点击 ics 即可自动导入。
+双击生成的日历 ics 文件，即可导入。
 
+</details>
 
+<details>
+<summary>iOS/iPadOS</summary>
+**方法 1    邮件**
 
-方法 2
+使用系统自带邮件 App，发送含有 ics 文件的邮件给自己。待收到邮件后，点击收件箱的 ics 文件即可导入到日历。
 
-使用另一苹果设备隔空投送给当前设备。
+**方法 2    隔空投送**
 
+使用另一苹果设备隔空投送给当前设备，然后日历会自动导入。
 
+**方法 3    快捷指令**
 
-方法 3
+1. 安装快捷指令 ICS To Calendar。
+   [👉 请点击此处导入快捷指令](https://www.icloud.com/shortcuts/cb99f157f9744a2cae049a2e2958d86c)。
 
-使用快捷指令。
+2. 打开 ics 文件的共享页面，选择 ICS To Calendar，等待出现日程信息后，点击添加全部。
 
-// TODO
+    ![image-20220413140940192](images//image-20220413140940192.png)
 
-
+</details>
 
 ### 参考资料
 
-1.   [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545). iCalendar 标准的官方文档。
-2.   [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/) 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
-3.   [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/) 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。
+1. [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545). 这是 iCalendar 标准的官方文档。
+
+2. [iCalendar for Python](https://icalendar.readthedocs.io/en/latest/) 第三方库官方文档。这是能够快速生成并处理 iCalendar 对象的 Python 库。
+
+3. [BeautifulSoup](https://beautifulsoup.readthedocs.io/zh_CN/) 第三方库官方文档。BeautifulSoup 是一个可以从 HTML 或 XML 文件中提取数据的 Python 库。

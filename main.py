@@ -156,8 +156,8 @@ def getCookies(userName: str = None, password: str = None) -> dict:
         print("获取 Cookie 成功")
         return newCookie
     else:
-        print("获取 Cookie 失败")
-        return None
+        print("获取 Cookie 失败，请检查账号、密码是否错误")
+        exit(1)
 
 
 def getHTML(userName=None, password=None) -> str:
