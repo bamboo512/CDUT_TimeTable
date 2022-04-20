@@ -2,3 +2,10 @@ pytz
 icalendar
 requests
 bs4
+fastapi
+pydantic
+mysql-connector-python
+uvicorn
+aiofiles
+uvloop
+

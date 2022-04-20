@@ -1,414 +1,219 @@
-from bs4 import BeautifulSoup as bs4
-import requests
-import json
-from icalendar import Calendar, Event, Alarm
+import uvicorn
 from datetime import datetime, timedelta
-from uuid import uuid1
-import pytz
-import re
+from typing import Optional
+import mysql.connector
+from fastapi import FastAPI
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from hashlib import md5
+import timetable
+from timetable import getCookies
 
 
-def list2ics(classList):
-    # Calendar 对象
-    calendar = Calendar()
-    calendar['version'] = '2.0'
-    calendar['prodid'] = '-//CDUT//TimeTable//CN'
+# 生成MD5
 
-    firstDay = datetime(2022, 2, 21, tzinfo=pytz.timezone(
-        "Asia/Shanghai")) - timedelta(days=1)  # 开学第一周星期一的时间，需要修改以便学期更替
 
-    beginTime = {
-        1: timedelta(hours=8, minutes=10),
-        2: timedelta(hours=9, minutes=00),
-        3: timedelta(hours=10, minutes=15),
-        4: timedelta(hours=11, minutes=5),
-        5: timedelta(hours=14, minutes=30),
-        6: timedelta(hours=15, minutes=20),
-        7: timedelta(hours=16, minutes=25),
-        8: timedelta(hours=17, minutes=15),
-        9: timedelta(hours=19, minutes=10),
-        10: timedelta(hours=20, minutes=00),
-        11: timedelta(hours=20, minutes=50),
+def genearteMD5(original: str):
+    # 创建md5对象
+    hl = md5()
+
+    # Tips
+    # 此处必须声明encode
+    # 否则报错为：hl.update(str)    Unicode-objects must be encoded before hashing
+    hl.update(original.encode(encoding='utf-8'))
+
+    return hl.hexdigest()
+
+
+class UserCreate(BaseModel):
+    userName: str
+    password: str
+
+
+class User(BaseModel):
+    userName: Optional[str] = None
+    md5: str = None
+    password: Optional[str] = None
+    lastRefreshTime: Optional[datetime] = None
+
+
+class UserDAO:
+    config = {
+        'host': "localhost",    # 本地数据库测试
+        "password": "本地数据库的密码",
+
+        "user": "root",
+        'port': 3306,
+        'database': "timetable",
     }
-    endTime = {
-        1: timedelta(hours=8, minutes=55),
-        2: timedelta(hours=9, minutes=45),
-        3: timedelta(hours=11, minutes=00),
-        4: timedelta(hours=11, minutes=50),
-        5: timedelta(hours=15, minutes=15),
-        6: timedelta(hours=16, minutes=5),
-        7: timedelta(hours=17, minutes=10),
-        8: timedelta(hours=18, minutes=0),
-        9: timedelta(hours=19, minutes=55),
-        10: timedelta(hours=20, minutes=45),
-        11: timedelta(hours=21, minutes=35),
-    }
 
-    for item in classList:
-        event = Event()
-        event['uid'] = str(uuid1())
+    def updateLastRefreshTime(self, userName, lastRefreshTime):
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+        sql = "update account set lastRefreshTime = '{}' where userName = '{}'".format(
+            lastRefreshTime, userName)
+        try:
+            # 执行 sql 语句
+            cursor.execute(sql)
+            # 提交事务
+            db.commit()
 
-        event.add('summary', item['name'])
-        # description = "教师：{}  学时：{}  学分：{}".format(
-        #     item['teacher'], \
-        #     item['学时'], \
-        #     item['学分'] \
-        # )
-        description = "教师：{}".format(
-            item['teacher'],
-        )
-        event.add('description', description)
-        event.add('location', item['location'])
+        except Exception:
+            # Rollback in case there is any error
+            db.rollback()
 
-        # 时间
-        event.add('tzid', 'Asia/Shanghai')
-        startDateTime = firstDay + \
-            timedelta(days=item['累计开学天数']) + \
-            beginTime[item['begin']]
-        endDateTime = firstDay + \
-            timedelta(days=item['累计开学天数']) + \
-            endTime[item['end']]
+        cursor.close()
+        db.close()
+        return cursor.rowcount
 
-        event.add('dtstart', startDateTime)
-        event.add('dtend', endDateTime)
+    def getUserByMd5(self, md5):
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+        sql = "select * from account where md5 = '{}'".format(md5)
+        # 若连接失效，自动重连数据库
+        db.ping(reconnect=True)
 
-        # 在 上课前 40 分钟前发出通知
-        alarm = Alarm()
-        alarm.add('action', 'DISPLAY')
-        alarm.add('description', '上课前 40 分钟通知')
-        alarm.add('trigger', timedelta(minutes=-40))
-        event.add_component(alarm)
+        # 执行sql语句
+        cursor.execute(sql)
+        # 如果有用户的话
+        result = cursor.fetchone()
+        if result:
 
-        # 将此 Event 添加到 Calendar
-        calendar.add_component(event)
-
-    with open(file="TimeTable.ics", mode="wb+") as icsFile:
-        # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
-        # 阻止 ics 文件的换行符变成 \r\n，导致空行问题
-        icsFile.write(prettify(calendar))
-    print("生成 ics 文件成功")
-
-
-# 更改 ics 部分格式，使其排版更合理
-def prettify(calendar):
-    # 使用 bytes() 将 str 转换为 bytes
-    # 修复 Windows 下运行，ics 文件中每一行都存在两个换行符，导致无法导入部分日历的问题。
-    return bytes(calendar.to_ical().decode("utf-8").replace('\,', ',').strip(), encoding="utf-8")
-
-
-# ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
-def getPreCodeAndCookies():
-    baseURL = "https://jw.cdut.edu.cn"
-    response = requests.post(
-        baseURL+"/Logon.do?method=logon&flag=sess")
-    scode, sxh = response.text.split("#")
-    cookies = response.cookies
-
-    return (scode, sxh, cookies)
-
-
-def getCookies(userName: str = None, password: str = None) -> dict:
-    # with open("cookies.json", "w+") as f:
-    #     if f.read() not in ["", None]:
-    #         print("读取 cookies 成功")
-    #         cookies = json.load(f)
-    #         return cookies
-    if userName is None or password is None:
-        print("请输入用户名和密码")
-        exit(0)
-
-    baseURL = "https://jw.cdut.edu.cn"
-    scode, sxh, cookies = getPreCodeAndCookies()
-
-    # 以下只是把新教务处官网登录的 JavaScript 源代码翻译过来。
-    code = userName+"%%%"+password
-    encoded = ""
-
-    i = 0
-    while i < len(code):
-        if i < 20:
-            encoded = encoded + code[i:i + 1] + scode[0:int(sxh[i:i + 1])]
-            scode = scode[int(sxh[i:i + 1]): len(scode)]
+            user = User(userName=result[0], password=result[1],
+                        md5=result[2], lastRefreshTime=result[3])
+            return user
         else:
-            encoded = encoded + code[i: len(code)]
-            i = len(code)
-        i = i + 1
+            return None
 
-    # print(encoded)
-    url = baseURL+"/Logon.do?method=logon"
+    def getUserByUserName(self, userName):
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+        sql = "select * from account where userName = '{}'".format(userName)
+        # 若连接失效，自动重连数据库
+        db.ping(reconnect=True)
 
-    data = {
-        "userAccount": userName,
-        "userPassword": "",
-        "encoded": encoded
-    }
-    session = requests.Session()
-    response = session.post(url=url, data=data, cookies=cookies)
+        # 执行sql语句
+        cursor.execute(sql)
+        # 如果有用户的话
+        result = cursor.fetchone()
+        if result:
+            user = User(userName=result[0], password=result[1],
+                        md5=result[2], lastRefreshTime=result[3])
+            return user
+        else:
+            return None
 
-    # 登录成功后 URL 会发生跳转，可依据此判断是否登录成功
-    if response.url == "https://jw.cdut.edu.cn/jsxsd/framework/xsMainV.htmlx":
+    def insertUser(self, user):
+        sql = f"insert into account (userName,password,md5) values ('{user.userName}','{ user.password}','{user.md5}')"
 
-        newCookie = {**cookies, **session.cookies}  # 合并两个 Cookie
-        # with open("cookies.json", "w") as f:
-        #     json.dump(newCookie, f)
+        # 如果存在同名用户，只就好更新
+        if self.getUserByUserName(user.userName):
+            sql = f"update account set password='{user.password}' where userName = '{user.userName}'"
 
-        # print(newCookie)
-        print("获取 Cookie 成功")
-        return newCookie
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+
+        try:
+            # 执行 sql 语句
+            cursor.execute(sql)
+            # 提交事务
+            db.commit()
+
+        except Exception:
+            # Rollback in case there is any error
+            db.rollback()
+            return False
+
+        cursor.close()
+        db.close()
+        return True
+
+    def deleteUser(self, userName):
+        db = mysql.connector.connect(**self.config)
+        cursor = db.cursor()
+        sql = "delete from account where userName = {}".format(userName)
+        try:
+            # 执行 sql 语句
+            cursor.execute(sql)
+            # 提交事务
+            db.commit()
+
+        except Exception:
+            # Rollback in case there is any error
+            db.rollback()
+
+        cursor.close()
+        db.close()
+        return cursor.rowcount  # 返回受 sql 语句影响后变更的列数
+
+
+app = FastAPI()
+
+# 防止 POST 请求变成 OPTIONS 请求后被 ban（405 错误）
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# app.add_middleware(HTTPSRedirectMiddleware)
+
+
+@app.post("/signup")
+# async def signUp(userName: str = Form(...), password: str = Form(...)):
+#     md5 = genearteMD5(userName)
+#     user = User(userName=userName, password=password,
+#                 md5=md5)
+async def signUp(payload: UserCreate):
+    userName = payload.userName
+    password = payload.password
+    md5 = genearteMD5(userName)
+    user = User(userName=userName, password=password,
+                md5=md5)
+
+    isPasswordCorrect = getCookies(userName, password)
+    if isPasswordCorrect == False:
+        return {"code": -1, "message": "新教务处学号或密码错误"}
+
+    result = UserDAO().insertUser(user)
+
+    if result == True:
+        return {"code": 0, "message": "登录成功", "url": f"webcal://time.pytbt.xyz/api/iCalendar/{md5}"}
     else:
-        print("获取 Cookie 失败，请检查账号、密码是否错误")
-        exit(1)
+        return {"code": -2, "message": "登录失败，无法将用户信息写入数据库"}
 
 
-def getHTML(userName=None, password=None) -> str:
-    url = "https://jw.cdut.edu.cn/jsxsd/xskb/xskb_list.do"
+@app.get("/iCalendar/{md5}")
+async def getiCalendar(md5: str):
 
-    cookies = getCookies(userName, password)
-    response = requests.get(url=url, cookies=cookies)
-    html = response.text
-    html = re.sub("<br>", "<br />", response.text)
-    # 不然 _.children 会把一格中的第二、三、... 节课，用 <br></br> 包裹起来，成为一个子元素，不便于使用偏移量分析所有课程
-    print("获取课表 HTML 表格成功")
-    return html
+    user = UserDAO().getUserByMd5(md5)
 
+    print(user.userName)
 
-def parseHTML(html):
+    if user is None:
+        return {"code": -1, "message": "用户不存在"}
 
-    soup = bs4(html, "html.parser")
-    table = soup.find('table', attrs={'id': 'timetable'})
-    rows = table.find_all('tr')
-    classList = []
+    elif user.lastRefreshTime is None or abs(user.lastRefreshTime-datetime.now()) > timedelta(days=2):
+        now = datetime.now()
 
-    for row in rows:
-        day = 1
-        cols = row.find_all('td')    # 周一 -> 周五的每节课程
+        # 刷新时间超过两天，重新生成日历，并更新数据库上次刷新时间
+        print(f"开始更新 {user.userName} 的日历")
+        timetable.getCalendar(user.userName, user.password, user.md5)
+        print(f"更新 {user.userName} 的日历完成")
+        UserDAO().updateLastRefreshTime(user.userName, now)
+        filePath = f"timetable/{md5}.ics"
+        return FileResponse(filePath)
 
-        for col in cols:
-            course = col.find(
-                'div', attrs={'class': 'kbcontent'})  # find course
-            # 根据 .kbcontent 查询来的标签，有的是无效信息（完全没有子元素）
-            if course is None:
-                continue
-            # 而有的格子是一学期都没有安排课的
-            elif course.text == '\xa0' or course.text == " ":
-                day += 1
-                continue
+    else:
+        # 刷新时间未超过两天，直接返回已有日历
 
-            # print(course)
-            teacher = [item.text for item in course.findAll(
-                "font", title="教师")]
-            location = [item.text for item in course.findAll(
-                "font", title="教室")]
-            relativeTime = [item.text for item in course.findAll(
-                "font", title="周次(节次)")]
-            detail = [item.text for item in course.findAll(
-                "font", attrs={"name": "xsks"})]
-            # print(detail)
-
-            name = []
-            listOfChildren = list(course.children)
-            for (i, e) in enumerate(listOfChildren):
-                if i == 0:
-                    name.append(e)
-                elif e == "---------------------":
-                    name.append(listOfChildren[i+2])
-                else:
-                    continue
-            # print(name)
-
-            for i in range(len(name)):
-                classInfo = {
-                    "name": name[i],
-                    "teacher": teacher[i],
-                    "relativeTime": relativeTime[i],
-                    "location": location[i],
-                    "detail": detail[i],
-                    "day": day,
-                }
-                classList.append(classInfo)
-
-            day += 1
-
-    classList = removeDuplicateClass(classList)
-    # print(classList)
-    print("解析 HTML 表格成功")
-    return classList
-
-
-def removeDuplicateClass(classList):
-    tupleOfNameAndTime = []
-    newClassList = []
-    for e in classList:
-        if (e['name'], e['relativeTime'], e['day']) not in tupleOfNameAndTime:
-            newClassList.append(e)
-            tupleOfNameAndTime.append((e['name'], e['relativeTime'], e['day']))
-        else:
-            continue
-    return newClassList
-
-
-def parseTime(relativeTime):
-    """ 测试数据：
-    relativeTime = "1,2,3-5,8-10,14-17,20(周)[01-02-03-04节]"
-    """
-
-    week = relativeTime.split('(周)')[0]
-    indexInADay = relativeTime.split('(周)')[1]
-
-    # ! 处理周
-    setOfWeek = set()
-    regex_1 = re.compile(r'\b\d+-\d+\b')
-    regex_2 = re.compile(r'\d+')
-
-    # 处理 "1-5" 这类情况
-    group1 = regex_1.findall(week)
-
-    # 处理 "2" 这类情况
-    group2 = regex_2.findall(week)
-
-    for e in group1:
-        start = int(e.split('-')[0])
-        end = int(e.split('-')[1])
-        for i in range(start, end+1):
-            setOfWeek.add(i)
-    for e in group2:
-        setOfWeek.add(int(e))
-
-    # ! 处理节数
-    regex_3 = re.compile(r'\d+')
-    group3 = regex_3.findall(indexInADay)
-    setOfTime = {int(e) for e in group3}
-
-    return(setOfWeek, setOfTime)
-
-
-def getDetailedClassList(classList):
-    detailedClassList = []
-    for e in classList:
-        setOfWeek, setOfTime = parseTime(e['relativeTime'])
-        # print(setOfWeek, setOfTime)
-
-        for week in setOfWeek:
-
-            copyOfSetOfTime = setOfTime.copy()  # 需要浅拷贝，因为后面会改变值
-            while len(copyOfSetOfTime) > 0:
-
-                begin, end = 1, 2
-                if copyOfSetOfTime & {1, 2, 3, 4} == {1, 2, 3, 4}:
-                    begin = 1
-                    end = 4
-                    copyOfSetOfTime -= {1, 2, 3, 4}
-                elif copyOfSetOfTime & {5, 6, 7, 8} == {5, 6, 7, 8}:
-                    begin = 5
-                    end = 8
-                    copyOfSetOfTime -= {5, 6, 7, 8}
-                elif copyOfSetOfTime & {9, 10, 11} == {9, 10, 11}:
-                    begin = 9
-                    end = 11
-                    copyOfSetOfTime -= {9, 10, 11}
-                elif copyOfSetOfTime & {9, 10} == {9, 10}:
-                    begin = 9
-                    end = 10
-                    copyOfSetOfTime -= {9, 10}
-                elif copyOfSetOfTime & {1, 2} == {1, 2}:
-                    begin = 1
-                    end = 2
-                    copyOfSetOfTime -= {1, 2}
-                elif copyOfSetOfTime & {3, 4} == {3, 4}:
-                    begin = 3
-                    end = 4
-                    copyOfSetOfTime -= {3, 4}
-                elif copyOfSetOfTime & {5, 6} == {5, 6}:
-                    begin = 5
-                    end = 6
-                    copyOfSetOfTime -= {5, 6}
-                elif copyOfSetOfTime & {7, 8} == {7, 8}:
-                    begin = 7
-                    end = 8
-                    copyOfSetOfTime -= {7, 8}
-                elif copyOfSetOfTime & {1} == {1}:
-                    begin = 1
-                    end = 1
-                    copyOfSetOfTime -= {1}
-                elif copyOfSetOfTime & {2} == {2}:
-                    begin = 2
-                    end = 2
-                    copyOfSetOfTime -= {2}
-                elif copyOfSetOfTime & {3} == {3}:
-                    begin = 3
-                    end = 3
-                    copyOfSetOfTime -= {3}
-                elif copyOfSetOfTime & {4} == {4}:
-                    begin = 4
-                    end = 4
-                    copyOfSetOfTime -= {4}
-                elif copyOfSetOfTime & {5} == {5}:
-                    begin = 5
-                    end = 5
-                    copyOfSetOfTime -= {5}
-                elif copyOfSetOfTime & {6} == {6}:
-                    begin = 6
-                    end = 6
-                    copyOfSetOfTime -= {6}
-                elif copyOfSetOfTime & {7} == {7}:
-                    begin = 7
-                    end = 7
-                    copyOfSetOfTime -= {7}
-                elif copyOfSetOfTime & {8} == {8}:
-                    begin = 8
-                    end = 8
-                    copyOfSetOfTime -= {8}
-                elif copyOfSetOfTime & {9} == {9}:
-                    begin = 9
-                    end = 9
-                    copyOfSetOfTime -= {9}
-                elif copyOfSetOfTime & {10} == {10}:
-                    begin = 10
-                    end = 10
-                    copyOfSetOfTime -= {10}
-                elif copyOfSetOfTime & {11} == {11}:
-                    begin = 11
-                    end = 11
-                    copyOfSetOfTime -= {11}
-
-                # 很不明白为什么会有 12 节，但是有的课表确实存在。
-                elif copyOfSetOfTime & {12} == {12}:
-                    copyOfSetOfTime -= {12}
-
-                # print(begin, end)
-                detailedClassList.append({
-                    "name": e['name'],
-                    # "type": e['type'],
-                    "teacher": e['teacher'],
-                    "location": e['location'],
-                    # "detail": e['detail'],
-                    "累计开学天数": (week-1)*7+e['day'],
-                    "begin": begin,
-                    "end": end
-                })
-
-            # print(listOfTime)
-    # print(detailedClassList)
-    print("处理课程数据成功")
-    return detailedClassList
-
-
-def main():
-    with open("account.json", "r+", encoding="utf-8") as f:
-        accountInfo = json.load(f)
-    userName, password = accountInfo['userName'], accountInfo['password']
-    try:
-        assert userName != "" and password != ""
-    except:
-        print("请先在 account.json 中设置阁下在新版教务系统的用户名和密码")
-        return
-
-    html = getHTML(userName, password)
-    classList = parseHTML(html)
-    detailedClassList = getDetailedClassList(classList)
-
-    list2ics(detailedClassList)
+        filePath = f"timetable/{md5}.ics"
+        return FileResponse(filePath)
 
 
 if __name__ == '__main__':
-    main()
+    uvicorn.run("main:app", port=8000, host='0.0.0.0',
+                reload=True, reload_dirs=["html_files"])
