@@ -8,10 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from hashlib import md5
 import timetable
+import json
 from timetable import getCookies
 
 
 # 生成MD5
+def getDbConfig():
+    with open('config.json', 'r') as f:
+        db = json.load(f).get("db")
+    return db
 
 
 def genearteMD5(original: str):
@@ -39,14 +44,7 @@ class User(BaseModel):
 
 
 class UserDAO:
-    config = {
-        'host': "localhost",    # 本地数据库测试
-        "password": "Bamboo@314",
-
-        "user": "root",
-        'port': 3306,
-        'database': "timetable",
-    }
+    config = getDbConfig()
 
     def updateLastRefreshTime(self, userName, lastRefreshTime):
         db = mysql.connector.connect(**self.config)
