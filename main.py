@@ -41,7 +41,7 @@ class User(BaseModel):
 class UserDAO:
     config = {
         'host': "localhost",    # 本地数据库测试
-        "password": "本地数据库的密码",
+        "password": "Bamboo@314",
 
         "user": "root",
         'port': 3306,

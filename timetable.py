@@ -5,7 +5,22 @@ from datetime import datetime, timedelta
 from uuid import uuid1
 import pytz
 import re
-import mysql.connector
+import json
+
+
+# 学期 ID
+termId = "2022-2023-1"
+firstDayInOneTerm = datetime(year=2022, month=8, day=29, tzinfo=pytz.timezone(
+    "Asia/Shanghai"))  # 开学第一周星期一的时间，需要修改以便学期更替
+
+
+baseURL = "https://jw.cdut.edu.cn"
+routerUrl = {
+    "examHTML": baseURL+"/jsxsd/xsks/xsksap_list",
+    "preconditionLoginCode": baseURL+"/Logon.do?method=logon&flag=sess",
+    "login": baseURL+"/Logon.do?method=logon",
+    "courseTableHTML": baseURL+"/jsxsd/xskb/xskb_list.do",
+}
 
 
 def list2ics(md5: str, classList: list, isRunByServer: bool = False):
@@ -14,8 +29,7 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
     calendar['version'] = '2.0'
     calendar['prodid'] = '-//CDUT//TimeTable//CN'
 
-    firstDay = datetime(2022, 2, 21, tzinfo=pytz.timezone(
-        "Asia/Shanghai")) - timedelta(days=1)  # 开学第一周星期一的时间，需要修改以便学期更替
+    firstDay = firstDayInOneTerm - timedelta(days=1)
 
     beginTime = {
         1: timedelta(hours=8, minutes=10),
@@ -89,7 +103,7 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
     else:
-        with open(file=f"timetable/{md5}.ics", mode="wb+") as icsFile:
+        with open(file=f"{md5}.ics", mode="wb+") as icsFile:
             # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
@@ -105,9 +119,9 @@ def prettify(calendar):
 
 # ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
 def getPreCodeAndCookies():
-    baseURL = "https://jw.cdut.edu.cn"
+
     response = requests.post(
-        baseURL+"/Logon.do?method=logon&flag=sess")
+        routerUrl["preconditionLoginCode"])
     scode, sxh = response.text.split("#")
     cookies = response.cookies
 
@@ -124,7 +138,6 @@ def getCookies(userName: str = None, password: str = None) -> dict:
         print("请输入用户名和密码")
         exit(-1)
 
-    baseURL = "https://jw.cdut.edu.cn"
     scode, sxh, cookies = getPreCodeAndCookies()
 
     # 以下只是把新教务处官网登录的 JavaScript 源代码翻译过来。
@@ -142,7 +155,7 @@ def getCookies(userName: str = None, password: str = None) -> dict:
         i = i + 1
 
     # print(encoded)
-    url = baseURL+"/Logon.do?method=logon"
+    url = routerUrl["login"]
 
     data = {
         "userAccount": userName,
@@ -168,10 +181,14 @@ def getCookies(userName: str = None, password: str = None) -> dict:
 
 
 def getHTML(userName=None, password=None) -> str:
-    url = "https://jw.cdut.edu.cn/jsxsd/xskb/xskb_list.do"
+    url = routerUrl["courseTableHTML"]
 
     cookies = getCookies(userName, password)
-    response = requests.get(url=url, cookies=cookies)
+    payload = {
+        "xnxq01id": termId  # 当前学期的 id
+    }
+    response = requests.post(url=url, cookies=cookies, data=payload)
+
     html = response.text
     html = re.sub("<br>", "<br />", response.text)
     # 不然 _.children 会把一格中的第二、三、... 节课，用 <br></br> 包裹起来，成为一个子元素，不便于使用偏移量分析所有课程
@@ -400,22 +417,40 @@ def getDetailedClassList(classList):
     return detailedClassList
 
 
+def getUser():
+    with open('account.json', 'r+') as f:
+        user = json.load(f)
+
+    md5 = "课程表"
+    return (user['userName'], user['password'], md5)
+
+
 def main():
-    db = mysql.connect(host='localhost', user='root',
-                       password='123456', db='test', charset='utf8')
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM `account` where")
-    userInfo = cursor.fetchall()
-    for e in userInfo:
-        userName = e["userName"]
-        password = e["password"]
-        md5 = e['md5']
+    userName, password, md5 = getUser()
 
     html = getHTML(userName, password)
     classList = parseHTML(html)
     detailedClassList = getDetailedClassList(classList)
 
+    getExamHtml()
     list2ics(md5, detailedClassList)
+
+
+def getExamHtml():
+    userName, password, md5 = getUser()
+
+    url = routerUrl["examHTML"]
+
+    payload = {
+        "xnxqid": termId
+    }
+
+    html = requests.post(
+        url,
+        data=payload,
+        cookies=getCookies(userName, password)).text
+    print(html)
+    return html
 
 
 def getCalendar(userName, password, md5):
