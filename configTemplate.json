@@ -4,7 +4,7 @@
     "firstDay": "2022-8-29",
     "termId": "2022-2023-1",
     "db": {
-        "url": "localhost",
+        "host": "localhost",
         "user": "root",
         "port": 3306,
         "password": "数据库密码",
