@@ -9,5 +9,6 @@
         "port": 3306,
         "password": "数据库密码",
         "database": "数据库名称"
-    }
+    },
+    "backendUrl": "webcal://time.pytbt.xyz/api"
 }
