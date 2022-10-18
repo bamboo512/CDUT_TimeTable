@@ -7,5 +7,4 @@ pydantic
 mysql-connector-python
 uvicorn
 aiofiles
-uvloop
 

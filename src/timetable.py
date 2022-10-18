@@ -10,24 +10,25 @@ import json
 
 # 学期 ID
 termId = "2022-2023-1"
-firstDayInOneTerm = datetime(year=2022, month=8, day=29, tzinfo=pytz.timezone(
-    "Asia/Shanghai"))  # 开学第一周星期一的时间，需要修改以便学期更替
+firstDayInOneTerm = datetime(
+    year=2022, month=8, day=29, tzinfo=pytz.timezone("Asia/Shanghai")
+)  # 开学第一周星期一的时间，需要修改以便学期更替
 
 
 baseURL = "https://jw.cdut.edu.cn"
 routerUrl = {
-    "examHTML": baseURL+"/jsxsd/xsks/xsksap_list",
-    "preconditionLoginCode": baseURL+"/Logon.do?method=logon&flag=sess",
-    "login": baseURL+"/Logon.do?method=logon",
-    "courseTableHTML": baseURL+"/jsxsd/xskb/xskb_list.do",
+    "examHTML": baseURL + "/jsxsd/xsks/xsksap_list",
+    "preconditionLoginCode": baseURL + "/Logon.do?method=logon&flag=sess",
+    "login": baseURL + "/Logon.do?method=logon",
+    "courseTableHTML": baseURL + "/jsxsd/xskb/xskb_list.do",
 }
 
 
 def list2ics(md5: str, classList: list, isRunByServer: bool = False):
     # Calendar 对象
     calendar = Calendar()
-    calendar['version'] = '2.0'
-    calendar['prodid'] = '-//CDUT//TimeTable//CN'
+    calendar["version"] = "2.0"
+    calendar["prodid"] = "-//CDUT//TimeTable//CN"
 
     firstDay = firstDayInOneTerm - timedelta(days=1)
 
@@ -61,49 +62,48 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
     for item in classList:
         event = Event()
 
-        event['uid'] = str(uuid1())  # 每个日程都会有一个唯一的 uuid
+        event["uid"] = str(uuid1())  # 每个日程都会有一个唯一的 uuid
 
-        event.add('summary', item['name'])
+        event.add("summary", item["name"])
         # description = "教师：{}  学时：{}  学分：{}".format(
         #     item['teacher'], \
         #     item['学时'], \
         #     item['学分'] \
         # )
         description = "教师：{}".format(
-            item['teacher'],
+            item["teacher"],
         )
-        event.add('description', description)
-        event.add('location', item['location'])
+        event.add("description", description)
+        event.add("location", item["location"])
 
         # 时间
-        event.add('tzid', 'Asia/Shanghai')
-        startDateTime = firstDay + \
-            timedelta(days=item['累计开学天数']) + \
-            beginTime[item['begin']]
-        endDateTime = firstDay + \
-            timedelta(days=item['累计开学天数']) + \
-            endTime[item['end']]
+        event.add("tzid", "Asia/Shanghai")
+        startDateTime = (
+            firstDay + timedelta(days=item["累计开学天数"]) + beginTime[item["begin"]]
+        )
 
-        event.add('dtstart', startDateTime)
-        event.add('dtend', endDateTime)
+        endDateTime = firstDay + timedelta(days=item["累计开学天数"]) + endTime[item["end"]]
+
+        event.add("dtstart", startDateTime)
+        event.add("dtend", endDateTime)
 
         # 在 上课前 30 分钟前发出通知
         alarm = Alarm()
-        alarm.add('action', 'DISPLAY')
-        alarm.add('description', '上课前 30 分钟通知')
-        alarm.add('trigger', timedelta(minutes=-30))
+        alarm.add("action", "DISPLAY")
+        alarm.add("description", "上课前 30 分钟通知")
+        alarm.add("trigger", timedelta(minutes=-30))
         event.add_component(alarm)
 
         # 将此 Event 添加到 Calendar
         calendar.add_component(event)
 
     if isRunByServer:
-        with open(file=f"timetable/{md5}.ics", mode="wb+") as icsFile:
+        with open(file=f"timetable/{md5}.ics", mode="wb+", encoding="UTF-8") as icsFile:
             # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
     else:
-        with open(file=f"{md5}.ics", mode="wb+") as icsFile:
+        with open(file=f"{md5}.ics", mode="wb+", encoding="UTF-8") as icsFile:
             # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
@@ -114,14 +114,15 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
 def prettify(calendar):
     # 使用 bytes() 将 str 转换为 bytes
     # 修复 Windows 下运行，ics 文件中每一行都存在两个换行符，导致无法导入部分日历的问题。
-    return bytes(calendar.to_ical().decode("utf-8").replace('\,', ',').strip(), encoding="utf-8")
+    return bytes(
+        calendar.to_ical().decode("utf-8").replace("\,", ",").strip(), encoding="utf-8"
+    )
 
 
 # ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
 def getPreCodeAndCookies():
 
-    response = requests.post(
-        routerUrl["preconditionLoginCode"])
+    response = requests.post(routerUrl["preconditionLoginCode"])
     scode, sxh = response.text.split("#")
     cookies = response.cookies
 
@@ -129,11 +130,6 @@ def getPreCodeAndCookies():
 
 
 def getCookies(userName: str = None, password: str = None) -> dict:
-    # with open("cookies.json", "w+") as f:
-    #     if f.read() not in ["", None]:
-    #         print("读取 cookies 成功")
-    #         cookies = json.load(f)
-    #         return cookies
     if userName is None or password is None:
         print("请输入用户名和密码")
         exit(-1)
@@ -141,27 +137,23 @@ def getCookies(userName: str = None, password: str = None) -> dict:
     scode, sxh, cookies = getPreCodeAndCookies()
 
     # 以下只是把新教务处官网登录的 JavaScript 源代码翻译过来。
-    code = userName+"%%%"+password
+    code = userName + "%%%" + password
     encoded = ""
 
     i = 0
     while i < len(code):
         if i < 20:
-            encoded = encoded + code[i:i + 1] + scode[0:int(sxh[i:i + 1])]
-            scode = scode[int(sxh[i:i + 1]): len(scode)]
+            encoded = encoded + code[i : i + 1] + scode[0 : int(sxh[i : i + 1])]
+            scode = scode[int(sxh[i : i + 1]) : len(scode)]
         else:
-            encoded = encoded + code[i: len(code)]
+            encoded = encoded + code[i : len(code)]
             i = len(code)
         i = i + 1
 
     # print(encoded)
     url = routerUrl["login"]
 
-    data = {
-        "userAccount": userName,
-        "userPassword": "",
-        "encoded": encoded
-    }
+    data = {"userAccount": userName, "userPassword": "", "encoded": encoded}
     session = requests.Session()
     response = session.post(url=url, data=data, cookies=cookies)
 
@@ -169,10 +161,7 @@ def getCookies(userName: str = None, password: str = None) -> dict:
     if response.url == "https://jw.cdut.edu.cn/jsxsd/framework/xsMainV.htmlx":
 
         newCookie = {**cookies, **session.cookies}  # 合并两个 Cookie
-        # with open("cookies.json", "w") as f:
-        #     json.dump(newCookie, f)
 
-        # print(newCookie)
         print("获取 Cookie 成功")
         return newCookie
     else:
@@ -184,9 +173,7 @@ def getHTML(userName=None, password=None) -> str:
     url = routerUrl["courseTableHTML"]
 
     cookies = getCookies(userName, password)
-    payload = {
-        "xnxq01id": termId  # 当前学期的 id
-    }
+    payload = {"xnxq01id": termId}  # 当前学期的 id
     response = requests.post(url=url, cookies=cookies, data=payload)
 
     html = response.text
@@ -199,34 +186,33 @@ def getHTML(userName=None, password=None) -> str:
 def parseHTML(html):
 
     soup = bs4(html, "html.parser")
-    table = soup.find('table', attrs={'id': 'timetable'})
-    rows = table.find_all('tr')
+    table = soup.find("table", attrs={"id": "timetable"})
+    rows = table.find_all("tr")
     classList = []
 
     for row in rows:
         day = 1
-        cols = row.find_all('td')    # 周一 -> 周五的每节课程
+        cols = row.find_all("td")  # 周一 -> 周五的每节课程
 
         for col in cols:
-            course = col.find(
-                'div', attrs={'class': 'kbcontent'})  # find course
+            course = col.find("div", attrs={"class": "kbcontent"})  # find course
             # 根据 .kbcontent 查询来的标签，有的是无效信息（完全没有子元素）
             if course is None:
                 continue
             # 而有的格子是一学期都没有安排课的
-            elif course.text == '\xa0' or course.text == " ":
+            elif course.text == "\xa0" or course.text == " ":
                 day += 1
                 continue
 
             # print(course)
-            teacher = [item.text for item in course.findAll(
-                "font", title="教师")]
-            location = [item.text for item in course.findAll(
-                "font", title="教室")]
-            relativeTime = [item.text for item in course.findAll(
-                "font", title="周次(节次)")]
-            detail = [item.text for item in course.findAll(
-                "font", attrs={"name": "xsks"})]
+            teacher = [item.text for item in course.findAll("font", title="教师")]
+            location = [item.text for item in course.findAll("font", title="教室")]
+            relativeTime = [
+                item.text for item in course.findAll("font", title="周次(节次)")
+            ]
+            detail = [
+                item.text for item in course.findAll("font", attrs={"name": "xsks"})
+            ]
             # print(detail)
 
             name = []
@@ -235,7 +221,7 @@ def parseHTML(html):
                 if i == 0:
                     name.append(e)
                 elif e == "---------------------":
-                    name.append(listOfChildren[i+2])
+                    name.append(listOfChildren[i + 2])
                 else:
                     continue
             # print(name)
@@ -263,26 +249,26 @@ def removeDuplicateClass(classList):
     tupleOfNameAndTime = []
     newClassList = []
     for e in classList:
-        if (e['name'], e['relativeTime'], e['day']) not in tupleOfNameAndTime:
+        if (e["name"], e["relativeTime"], e["day"]) not in tupleOfNameAndTime:
             newClassList.append(e)
-            tupleOfNameAndTime.append((e['name'], e['relativeTime'], e['day']))
+            tupleOfNameAndTime.append((e["name"], e["relativeTime"], e["day"]))
         else:
             continue
     return newClassList
 
 
 def parseTime(relativeTime):
-    """ 测试数据：
+    """测试数据：
     relativeTime = "1,2,3-5,8-10,14-17,20(周)[01-02-03-04节]"
     """
 
-    week = relativeTime.split('(周)')[0]
-    indexInADay = relativeTime.split('(周)')[1]
+    week = relativeTime.split("(周)")[0]
+    indexInADay = relativeTime.split("(周)")[1]
 
     # ! 处理周
     setOfWeek = set()
-    regex_1 = re.compile(r'\b\d+-\d+\b')
-    regex_2 = re.compile(r'\d+')
+    regex_1 = re.compile(r"\b\d+-\d+\b")
+    regex_2 = re.compile(r"\d+")
 
     # 处理 "1-5" 这类情况
     group1 = regex_1.findall(week)
@@ -291,25 +277,25 @@ def parseTime(relativeTime):
     group2 = regex_2.findall(week)
 
     for e in group1:
-        start = int(e.split('-')[0])
-        end = int(e.split('-')[1])
-        for i in range(start, end+1):
+        start = int(e.split("-")[0])
+        end = int(e.split("-")[1])
+        for i in range(start, end + 1):
             setOfWeek.add(i)
     for e in group2:
         setOfWeek.add(int(e))
 
     # ! 处理节数
-    regex_3 = re.compile(r'\d+')
+    regex_3 = re.compile(r"\d+")
     group3 = regex_3.findall(indexInADay)
     setOfTime = {int(e) for e in group3}
 
-    return(setOfWeek, setOfTime)
+    return (setOfWeek, setOfTime)
 
 
 def getDetailedClassList(classList):
     detailedClassList = []
     for e in classList:
-        setOfWeek, setOfTime = parseTime(e['relativeTime'])
+        setOfWeek, setOfTime = parseTime(e["relativeTime"])
         # print(setOfWeek, setOfTime)
 
         for week in setOfWeek:
@@ -400,16 +386,18 @@ def getDetailedClassList(classList):
                     copyOfSetOfTime -= {12}
 
                 # print(begin, end)
-                detailedClassList.append({
-                    "name": e['name'],
-                    # "type": e['type'],
-                    "teacher": e['teacher'],
-                    "location": e['location'],
-                    # "detail": e['detail'],
-                    "累计开学天数": (week-1)*7+e['day'],
-                    "begin": begin,
-                    "end": end
-                })
+                detailedClassList.append(
+                    {
+                        "name": e["name"],
+                        # "type": e['type'],
+                        "teacher": e["teacher"],
+                        "location": e["location"],
+                        # "detail": e['detail'],
+                        "累计开学天数": (week - 1) * 7 + e["day"],
+                        "begin": begin,
+                        "end": end,
+                    }
+                )
 
             # print(listOfTime)
     # print(detailedClassList)
@@ -418,11 +406,11 @@ def getDetailedClassList(classList):
 
 
 def getUser():
-    with open('account.json', 'r+') as f:
+    with open("config.json", "r+", encoding="UTF-8") as f:
         user = json.load(f)
 
     md5 = "课程表"
-    return (user['userName'], user['password'], md5)
+    return (user["userName"], user["password"], md5)
 
 
 def main():
@@ -441,14 +429,9 @@ def getExamHtml():
 
     url = routerUrl["examHTML"]
 
-    payload = {
-        "xnxqid": termId
-    }
+    payload = {"xnxqid": termId}
 
-    html = requests.post(
-        url,
-        data=payload,
-        cookies=getCookies(userName, password)).text
+    html = requests.post(url, data=payload, cookies=getCookies(userName, password)).text
     print(html)
     return html
 
@@ -462,5 +445,5 @@ def getCalendar(userName, password, md5):
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

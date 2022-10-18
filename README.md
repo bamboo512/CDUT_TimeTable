@@ -21,157 +21,167 @@
 
 ### 使用指北 - 日历订阅
 
-1.   仅需在 [此网站](https://time.pytbt.xyz) 输入你的学号与新教务处密码。
+1. 仅需在 [此网站](https://time.pytbt.xyz) 输入你的学号与新教务处密码。
 
-     >   ⚠️  这个密码一定不会是你的身份证后 6 位，因为第一次登录会强制要求改密码。
-     >
-     >   如果登录时显示密码错误，请登录 [新教务处](https://jw.cdut.edu.cn/jsxsd/)，检查密码是否正确 ✅，或者是否已经根据新教务系统的要求更改密码。初始密码为身份证后 6 位。
-     >
-     >   这个密码可能与砚湖易办的统一身份认证密码不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。
+>   ⚠️  这个密码一定不会是你的身份证后 6 位，因为第一次登录会强制要求改密码。
+>
+>   如果登录时显示密码错误，请登录 [新教务处](https://jw.cdut.edu.cn/jsxsd/)，检查密码是否正确 ✅，或者是否已经根据新教务系统的要求更改密码。初始密码为身份证后 6 位。
+>
+>   这个密码可能与砚湖易办的统一身份认证密码不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。
 
-2.   在接下来的页面点击 **导入到日历** 按钮，或者复制订阅链接。
+2. 在接下来的页面点击 **导入到日历** 按钮，或者复制订阅链接。
 
-3.   在日历 App 导入订阅日历。
+3. 在日历 App 导入订阅日历。
 
-     >   ⚠️ 请特别关注
-     >
-     >   iOS/iPadOS/macOS 在导入订阅日历时，请 **取消** 勾选 **订阅详细信息** -> **移除提醒**。否则将不会收到提前 30 分钟的课程信息通知。
+>   ⚠️ 请特别关注
+>
+>   iOS/iPadOS/macOS 在导入订阅日历时，请 **取消** 勾选 **订阅详细信息** -> **移除提醒**。否则将不会收到提前 30 分钟的课程信息通知。
 
-     ![IMG_6646](images/IMG_6646.jpeg)
+![IMG_6646](images/IMG_6646.jpeg)
 
-     
+
 
 ### 使用指北 - 本地命令行
 
-1  克隆此项目到本地。
+1. 克隆此项目到本地。
 
-2  确保你的电脑已安装 Python 3+ 与 pip 包管理器。
+2. 确保你的电脑已安装 Python 3+ 与 pip 包管理器。
 
-3  在项目文件夹内运行以下命令。
+3. 在项目文件夹内运行以下命令。
 
 ```Shell
 pip install -r requirements.txt
 ```
 
-4  在 account.json 输入你的学号与密码。
+4. 在 config.json 输入你的学号与密码。
 
->   **请特别关注**：首次登录新教务处网站时会要求更改密码，请更改密码后再次尝试使用此工具。
+    将 configTemplate.json 重命名为 config.json，在 userName 后输入你的学号，password 后输入你的密码。
 
-这个密码可能与砚湖易办的不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
+    > **请特别关注**
+    >
+    > 首次登录新教务处网站时会要求更改密码，请更改密码后再次尝试使用此工具。
+    >
+    > 这个密码可能与砚湖易办的不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
 
-5  运行 timetable.py。执行以下代码：
+5. 运行 timetable.py。执行以下代码：
 
 ```Shell
 python timetable.py
 ```
 
-6  导入 ics 进日历。如果一切正常，在项目文件夹下会生成 `:你的学号.ics` 文件。
-使用日历打开此 ics 文件，即可导入课表信息。
+6. 导入 ics 进日历。如果一切正常，在项目文件夹下会生成 `:你的学号.ics` 文件。
+    使用日历打开此 ics 文件，即可导入课表信息。
 
-不同平台导入 ics 文件的流程，请参考 **此文档** -> **额外的信息** -> **如何导入到日历？**。
+  不同平台导入 ics 文件的流程，请参考 **此文档** -> **额外的信息** -> **如何导入到日历？**。
+
+
 
 ### 使用指北 - 本地服务器
 
-1.   克隆此项目到本地。
+1. 克隆此项目到本地。
 
-2.   确保你的电脑已安装 Python 3+ 与 pip 包管理器、Node 14+、yarn/npm 包管理器、MySQL 8+。
+2. 确保你的电脑已安装 Python 3+ 与 pip 包管理器、Node 14+、yarn/npm 包管理器、MySQL 8+ 的本地或者云数据库。
 
-3.   配置数据库。新建本地数据库名为 `timetable`，再新建表 `account`。表的详细信息如下。
+3. 将 configTemplate.json 重命名为 config.json。
+4. 配置数据库。新建数据库名为 `timetable`。在 config.json 中输入数据库的连接地址、用户名与密码。
 
-     ![截屏2022-04-20 21.18.54](images/截屏2022-04-20 21.18.54.png)
+    表的详细信息如下。不用新建表，因为程序在没有 accounts 表的时候会自动新建 accounts 表。
+    
 
-     
+![数据库表设计](images/db_table_design.png)
 
-4.   配置后端 FastAPI 服务器。
+​     
 
-     -   在项目文件夹内运行以下命令。
+5. 配置后端 FastAPI 服务器。
 
-         ```shell
-         pip install -r requirements.txt
-         ```
+-   在项目文件夹内运行以下命令。
 
-         
+    ```shell
+    pip install -r requirements.txt
+    ```
 
-     -    在 `main.py` -> `class userDAO` -> `config` 里修改你的数据库密码与表名（如果与预设的表名不一致的话）。
+    
 
-     -    运行服务器。你有以下两种选择。
+-    在 `main.py` -> `class userDAO` -> `config` 里修改你的数据库密码与表名（如果与预设的表名不一致的话）。
 
-         -   直接运行 `python main.py`。
-         -   在终端运行命令：`uvicorn main:app --reload --host 0.0.0.0 --port 8000`。
+-    运行服务器。你有以下两种选择。
 
-     -    在浏览器访问 [http://localhost:8000/](http://localhost:8000/)，如果出现 `{"detail":"Not Found"}` 就说明你已配置成功。
+    -   直接运行 `python main.py`。
+    -   在终端运行命令：`uvicorn main:app --reload --host 0.0.0.0 --port 8000`。
 
-     ​    
+-    在浏览器访问 [http://localhost:8000/](http://localhost:8000/)，如果出现 `{"detail":"Not Found"}` 就说明你已配置成功。
 
-4.   配置前端服务器。
+​    
 
-     -   克隆并进入仓库 [timetable-frontend]() 项目目录。
+6. 配置前端服务器。
 
-     -   安装依赖。在终端运行
+-   克隆并进入仓库 [timetable-frontend]() 项目目录。
 
-         ```
-         # 如果你是用的是 yarn
-         yarn
-         
-         # 如果你是用的是 npm
-         npm install
-         ```
+-   安装依赖。在终端运行
 
-         
+    ```
+    # 如果你是用的是 yarn
+    yarn
+    
+    # 如果你是用的是 npm
+    npm install
+    ```
 
-     -   运行前端（开发测试）。
+    
 
-         ```shell
-         # 如果你是用的是 yarn
-         yarn run serve
-         
-         # 如果你是用的是 npm
-         npm run serve
-         ```
+-   运行前端（开发测试）。
 
-         
+    ```shell
+    # 如果你是用的是 yarn
+    yarn run serve
+    
+    # 如果你是用的是 npm
+    npm run serve
+    ```
 
-     -   运行前端（正式环境）
+    
 
-         -   打包。运行成功后，将会生成 dist 文件夹。
+-   运行前端（正式环境）
 
-         ```shell
-         # 如果你是用的是 yarn
-         yarn run build
-         
-         # 如果你是用的是 npm
-         npm run build
-         ```
+    -   打包。运行成功后，将会生成 dist 文件夹。
 
-         -   运行生成的 dist。
+    ```shell
+    # 如果你是用的是 yarn
+    yarn run build
+    
+    # 如果你是用的是 npm
+    npm run build
+    ```
 
-             >   生成的 dist 是纯静态资源，能提供 http 服务的服务器都能运行。
-             >
-             >   你不仅可以用 nginx、caddy、express.js(基于 Node.js 的服务器) 等服务器运行 dist，你还能直接用浏览器打开 index.html 文件以运行。
+    -   运行生成的 dist。
 
-             这里我们选择使用 `serve`。
+        >   生成的 dist 是纯静态资源，能提供 http 服务的服务器都能运行。
+        >
+        >   你不仅可以用 nginx、caddy、express.js(基于 Node.js 的服务器) 等服务器运行 dist，你还能直接用浏览器打开 index.html 文件以运行。
 
-             安装 `serve`。
+        这里我们选择使用 `serve`。
 
-             ```
-             # 如果你是用的是 yarn
-             yarn global add serve
-             
-             # 如果你是用的是 npm
-             npm install -g serve
-             ```
+        安装 `serve`。
 
-             运行 dist。
+        ```
+        # 如果你是用的是 yarn
+        yarn global add serve
+        
+        # 如果你是用的是 npm
+        npm install -g serve
+        ```
 
-             ```
-             serve -s dist -l 5000
-             ```
+        运行 dist。
 
-             
+        ```
+        serve -s dist -l 5000
+        ```
 
-         -   如果你能在浏览器打开链接 [http://localhost:5000](http://localhost:5000)，你就部署成功了。
+        
 
-         
+    -   如果你能在浏览器打开链接 [http://localhost:5000](http://localhost:5000)，你就部署成功了。
+
+    
 
 ### 本地命令行程序运行流程
 
@@ -222,20 +232,20 @@ python timetable.py
 在文件管理器，或者在分享界面使用第三方应用打开，选择系统自带日历即可导入。
 
 > 受测试支持导入 ics 日历文件的，基于 Android 的操作系统包括小米 MIUI、OPPO ColorOS、华为 HarmonyOS、魅族 Flyme。
-> 
+
 </details>
 
 <details>
 <summary>macOS/Windows</summary>
 
-	双击生成的日历 ics 文件，即可导入。
+双击生成的日历 ics 文件，即可导入。
 
 </details>
 
 <details>
 <summary>iOS/iPadOS</summary>
-**方法 1    邮件**
 
+**方法 1    邮件**
 
 使用系统自带邮件 App，发送含有 ics 文件的邮件给自己。待收到邮件后，点击收件箱的 ics 文件即可导入到日历。
 
