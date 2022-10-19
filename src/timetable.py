@@ -98,12 +98,12 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
         calendar.add_component(event)
 
     if isRunByServer:
-        with open(file=f"timetable/{md5}.ics", mode="wb+", encoding="UTF-8") as icsFile:
+        with open(file=f"timetable/{md5}.ics", mode="wb+") as icsFile:
             # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
     else:
-        with open(file=f"{md5}.ics", mode="wb+", encoding="UTF-8") as icsFile:
+        with open(file=f"{md5}.ics", mode="wb+") as icsFile:
             # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
             # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
             icsFile.write(prettify(calendar))
