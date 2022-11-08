@@ -7,4 +7,5 @@ pydantic
 mysql-connector-python
 uvicorn
 aiofiles
+pycryptodome
 

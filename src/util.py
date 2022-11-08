@@ -4,6 +4,9 @@
 
 import json
 from hashlib import md5
+import base64
+from Crypto.Cipher import PKCS1_v1_5 as Cipher_pksc1_v1_5
+from Crypto.PublicKey import RSA
 
 
 def get_config():
@@ -25,3 +28,11 @@ def generate_md5(original: str):
     hash_md5.update(original.encode(encoding="utf-8"))
 
     return hash_md5.hexdigest()
+
+
+def encryptPassword(password, public_key):
+
+    rsakey = RSA.importKey(public_key)
+    cipher = Cipher_pksc1_v1_5.new(rsakey)
+    cipher_text = base64.b64encode(cipher.encrypt(password.encode()))
+    return "__RSA__" + cipher_text.decode()
