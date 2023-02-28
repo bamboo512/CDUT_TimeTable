@@ -1,14 +1,14 @@
 {
-    "userName": "你的学号",
-    "password": "你的新教务处密码（非砚湖易办的）",
-    "firstDay": "2022-8-29",
-    "termId": "2022-2023-1",
-    "db": {
-        "host": "localhost",
-        "user": "root",
-        "port": 3306,
-        "password": "数据库密码",
-        "database": "数据库名称"
-    },
-    "backendUrl": "webcal://time.pytbt.xyz/api/time"
+  "userName": "你的学号",
+  "password": "你的新教务处密码（非砚湖易办的）",
+  "firstDay": "2022-8-29",
+  "termId": "2022-2023-1",
+  "db": {
+    "host": "localhost",
+    "user": "root",
+    "port": 3306,
+    "password": "数据库密码",
+    "database": "数据库名称"
+  },
+  "backendUrl": "webcal://time.stariver.xyz/api/time"
 }

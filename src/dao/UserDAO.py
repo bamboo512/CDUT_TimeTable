@@ -17,6 +17,8 @@ class UserDAO:
                         userName varchar(32) primary key not null, 
                         password varchar(32),
                         lastRefreshTime datetime, 
+                        isUniLogin boolean,
+                        retryTimes int,
                         md5 varchar(32)
                 );
         """

@@ -1,30 +1,28 @@
-from bs4 import BeautifulSoup as bs4
-import requests
 from icalendar import Calendar, Event, Alarm
 from datetime import datetime, timedelta
 from uuid import uuid1
-import pytz
-import re
+from zoneinfo import ZoneInfo
+
+
 import json
+from crawler.downloader.course_table_downloader import CourseTableDownloader
+from crawler.login.LoginHelper import LoginHelper
+from crawler.parser.course_html_parser import CourseHtmlParser
+from util import get_config
 
 
-# 学期 ID
-termId = "2022-2023-1"
+config = get_config()
+
+# 开学第一周星期一的时间（需要与课表上的匹配），学期更替时应更改
 firstDayInOneTerm = datetime(
-    year=2022, month=8, day=29, tzinfo=pytz.timezone("Asia/Shanghai")
-)  # 开学第一周星期一的时间，需要修改以便学期更替
+    year=config["firstDayInOneTerm"]["year"],
+    month=config["firstDayInOneTerm"]["month"],
+    day=config["firstDayInOneTerm"]["day"],
+    tzinfo=ZoneInfo("Asia/Shanghai"),
+)
 
 
-baseURL = "https://jw.cdut.edu.cn"
-routerUrl = {
-    "examHTML": baseURL + "/jsxsd/xsks/xsksap_list",
-    "preconditionLoginCode": baseURL + "/Logon.do?method=logon&flag=sess",
-    "login": baseURL + "/Logon.do?method=logon",
-    "courseTableHTML": baseURL + "/jsxsd/xskb/xskb_list.do",
-}
-
-
-def list2ics(md5: str, classList: list, isRunByServer: bool = False):
+def list2ics(fileName: str, classList: list):
     # Calendar 对象
     calendar = Calendar()
     calendar["version"] = "2.0"
@@ -65,14 +63,10 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
         event["uid"] = str(uuid1())  # 每个日程都会有一个唯一的 uuid
 
         event.add("summary", item["name"])
-        # description = "教师：{}  学时：{}  学分：{}".format(
-        #     item['teacher'], \
-        #     item['学时'], \
-        #     item['学分'] \
-        # )
-        description = "教师：{}".format(
-            item["teacher"],
-        )
+
+        # description = f"教师：{item['teacher']}  学时：{item['学时']}  学分：{item['学分']}"
+
+        description = "教师：{item['teacher']}"
         event.add("description", description)
         event.add("location", item["location"])
 
@@ -97,312 +91,59 @@ def list2ics(md5: str, classList: list, isRunByServer: bool = False):
         # 将此 Event 添加到 Calendar
         calendar.add_component(event)
 
-    if isRunByServer:
-        with open(file=f"timetable/{md5}.ics", mode="wb+") as icsFile:
-            # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
-            # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
-            icsFile.write(prettify(calendar))
-    else:
-        with open(file=f"{md5}.ics", mode="wb+") as icsFile:
-            # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
-            # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
-            icsFile.write(prettify(calendar))
+    with open(file=f"timetable/{fileName}.ics", mode="wb+") as icsFile:
+        icsFile.write(prettify(calendar))
+
     print("生成 ics 文件成功")
 
 
 # 更改 ics 部分格式，使其排版更合理
 def prettify(calendar):
     # 使用 bytes() 将 str 转换为 bytes
-    # 修复 Windows 下运行，ics 文件中每一行都存在两个换行符，导致无法导入部分日历的问题。
+    # 因 Windows 换行是 \r\n，而 macOS/Linux/Unix 是 \n，所以需要转换为 bytes，
+    # 阻止问题：ics 文件的换行符变成 \r\n，导致空行 => 无法被部分日历软件正确解析。
     return bytes(
         calendar.to_ical().decode("utf-8").replace("\,", ",").strip(), encoding="utf-8"
     )
 
 
-# ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
-def getPreCodeAndCookies():
-
-    response = requests.post(routerUrl["preconditionLoginCode"])
-    scode, sxh = response.text.split("#")
-    cookies = response.cookies
-
-    return (scode, sxh, cookies)
+#  TODO - choose sign method from here
+#
 
 
-def getCookies(userName: str = None, password: str = None) -> dict:
-    if userName is None or password is None:
-        print("请输入用户名和密码")
-        exit(-1)
+def timetable2ics(timetable: list, fileName: str):
+    # Calendar 对象
+    calendar = Calendar()
+    calendar["version"] = "2.0"
+    calendar["prodid"] = "-//CDUT//TimeTable//CN"
 
-    scode, sxh, cookies = getPreCodeAndCookies()
+    for item in timetable:
+        event = Event()
 
-    # 以下只是把新教务处官网登录的 JavaScript 源代码翻译过来。
-    code = userName + "%%%" + password
-    encoded = ""
+        event["uid"] = str(uuid1())  # 每个日程都会有一个唯一的 uuid
+        event.add("tzid", "Asia/Shanghai")
+        event.add("summary", item["name"])
+        event.add("description", item["description"])
+        event.add("location", item["location"])
 
-    i = 0
-    while i < len(code):
-        if i < 20:
-            encoded = encoded + code[i : i + 1] + scode[0 : int(sxh[i : i + 1])]
-            scode = scode[int(sxh[i : i + 1]) : len(scode)]
-        else:
-            encoded = encoded + code[i : len(code)]
-            i = len(code)
-        i = i + 1
+        # 时间
+        event.add("dtstart", item["startDateTime"])
+        event.add("dtend", item["endDateTime"])
 
-    # print(encoded)
-    url = routerUrl["login"]
+        # 在 上课前 30 分钟前发出通知
+        alarm = Alarm()
+        alarm.add("action", "DISPLAY")
+        alarm.add("description", "上课前 30 分钟通知")
+        alarm.add("trigger", timedelta(minutes=-30))
+        event.add_component(alarm)
 
-    data = {"userAccount": userName, "userPassword": "", "encoded": encoded}
-    session = requests.Session()
-    response = session.post(url=url, data=data, cookies=cookies)
+        # 将此 Event 添加到 Calendar
+        calendar.add_component(event)
 
-    # 登录成功后 URL 会发生跳转，可依据此判断是否登录成功
-    if response.url == "https://jw.cdut.edu.cn/jsxsd/framework/xsMainV.htmlx":
+    with open(file=f"timetable/{fileName}.ics", mode="wb+") as icsFile:
+        icsFile.write(prettify(calendar))
 
-        newCookie = {**cookies, **session.cookies}  # 合并两个 Cookie
-
-        print("获取 Cookie 成功")
-        return newCookie
-    else:
-        print("获取 Cookie 失败")
-        return False
-
-
-def getHTML(userName=None, password=None) -> str:
-    url = routerUrl["courseTableHTML"]
-
-    cookies = getCookies(userName, password)
-    payload = {"xnxq01id": termId}  # 当前学期的 id
-    response = requests.post(url=url, cookies=cookies, data=payload)
-
-    html = response.text
-    html = re.sub("<br>", "<br />", response.text)
-    # 不然 _.children 会把一格中的第二、三、... 节课，用 <br></br> 包裹起来，成为一个子元素，不便于使用偏移量分析所有课程
-    print("获取课表 HTML 表格成功")
-    return html
-
-
-def parseHTML(html):
-
-    soup = bs4(html, "html.parser")
-    table = soup.find("table", attrs={"id": "timetable"})
-    rows = table.find_all("tr")
-    classList = []
-
-    for row in rows:
-        day = 1
-        cols = row.find_all("td")  # 周一 -> 周五的每节课程
-
-        for col in cols:
-            course = col.find("div", attrs={"class": "kbcontent"})  # find course
-            # 根据 .kbcontent 查询来的标签，有的是无效信息（完全没有子元素）
-            if course is None:
-                continue
-            # 而有的格子是一学期都没有安排课的
-            elif course.text == "\xa0" or course.text == " ":
-                day += 1
-                continue
-
-            # print(course)
-            teacher = [item.text for item in course.findAll("font", title="教师")]
-            location = [item.text for item in course.findAll("font", title="教室")]
-            relativeTime = [
-                item.text for item in course.findAll("font", title="周次(节次)")
-            ]
-            detail = [
-                item.text for item in course.findAll("font", attrs={"name": "xsks"})
-            ]
-            # print(detail)
-
-            name = []
-            listOfChildren = list(course.children)
-            for (i, e) in enumerate(listOfChildren):
-                if i == 0:
-                    name.append(e)
-                elif e == "---------------------":
-                    name.append(listOfChildren[i + 2])
-                else:
-                    continue
-            # print(name)
-
-            for i in range(len(name)):
-                classInfo = {
-                    "name": name[i],
-                    "teacher": teacher[i],
-                    "relativeTime": relativeTime[i],
-                    "location": location[i],
-                    "detail": detail[i],
-                    "day": day,
-                }
-                classList.append(classInfo)
-
-            day += 1
-
-    classList = removeDuplicateClass(classList)
-    # print(classList)
-    print("解析 HTML 表格成功")
-    return classList
-
-
-def removeDuplicateClass(classList):
-    tupleOfNameAndTime = []
-    newClassList = []
-    for e in classList:
-        if (e["name"], e["relativeTime"], e["day"]) not in tupleOfNameAndTime:
-            newClassList.append(e)
-            tupleOfNameAndTime.append((e["name"], e["relativeTime"], e["day"]))
-        else:
-            continue
-    return newClassList
-
-
-def parseTime(relativeTime):
-    """测试数据：
-    relativeTime = "1,2,3-5,8-10,14-17,20(周)[01-02-03-04节]"
-    """
-
-    week = relativeTime.split("(周)")[0]
-    indexInADay = relativeTime.split("(周)")[1]
-
-    # ! 处理周
-    setOfWeek = set()
-    regex_1 = re.compile(r"\b\d+-\d+\b")
-    regex_2 = re.compile(r"\d+")
-
-    # 处理 "1-5" 这类情况
-    group1 = regex_1.findall(week)
-
-    # 处理 "2" 这类情况
-    group2 = regex_2.findall(week)
-
-    for e in group1:
-        start = int(e.split("-")[0])
-        end = int(e.split("-")[1])
-        for i in range(start, end + 1):
-            setOfWeek.add(i)
-    for e in group2:
-        setOfWeek.add(int(e))
-
-    # ! 处理节数
-    regex_3 = re.compile(r"\d+")
-    group3 = regex_3.findall(indexInADay)
-    setOfTime = {int(e) for e in group3}
-
-    return (setOfWeek, setOfTime)
-
-
-def getDetailedClassList(classList):
-    detailedClassList = []
-    for e in classList:
-        setOfWeek, setOfTime = parseTime(e["relativeTime"])
-        # print(setOfWeek, setOfTime)
-
-        for week in setOfWeek:
-
-            copyOfSetOfTime = setOfTime.copy()  # 需要浅拷贝，因为后面会改变值
-            while len(copyOfSetOfTime) > 0:
-
-                begin, end = 1, 2
-                if copyOfSetOfTime & {1, 2, 3, 4} == {1, 2, 3, 4}:
-                    begin = 1
-                    end = 4
-                    copyOfSetOfTime -= {1, 2, 3, 4}
-                elif copyOfSetOfTime & {5, 6, 7, 8} == {5, 6, 7, 8}:
-                    begin = 5
-                    end = 8
-                    copyOfSetOfTime -= {5, 6, 7, 8}
-                elif copyOfSetOfTime & {9, 10, 11} == {9, 10, 11}:
-                    begin = 9
-                    end = 11
-                    copyOfSetOfTime -= {9, 10, 11}
-                elif copyOfSetOfTime & {9, 10} == {9, 10}:
-                    begin = 9
-                    end = 10
-                    copyOfSetOfTime -= {9, 10}
-                elif copyOfSetOfTime & {1, 2} == {1, 2}:
-                    begin = 1
-                    end = 2
-                    copyOfSetOfTime -= {1, 2}
-                elif copyOfSetOfTime & {3, 4} == {3, 4}:
-                    begin = 3
-                    end = 4
-                    copyOfSetOfTime -= {3, 4}
-                elif copyOfSetOfTime & {5, 6} == {5, 6}:
-                    begin = 5
-                    end = 6
-                    copyOfSetOfTime -= {5, 6}
-                elif copyOfSetOfTime & {7, 8} == {7, 8}:
-                    begin = 7
-                    end = 8
-                    copyOfSetOfTime -= {7, 8}
-                elif copyOfSetOfTime & {1} == {1}:
-                    begin = 1
-                    end = 1
-                    copyOfSetOfTime -= {1}
-                elif copyOfSetOfTime & {2} == {2}:
-                    begin = 2
-                    end = 2
-                    copyOfSetOfTime -= {2}
-                elif copyOfSetOfTime & {3} == {3}:
-                    begin = 3
-                    end = 3
-                    copyOfSetOfTime -= {3}
-                elif copyOfSetOfTime & {4} == {4}:
-                    begin = 4
-                    end = 4
-                    copyOfSetOfTime -= {4}
-                elif copyOfSetOfTime & {5} == {5}:
-                    begin = 5
-                    end = 5
-                    copyOfSetOfTime -= {5}
-                elif copyOfSetOfTime & {6} == {6}:
-                    begin = 6
-                    end = 6
-                    copyOfSetOfTime -= {6}
-                elif copyOfSetOfTime & {7} == {7}:
-                    begin = 7
-                    end = 7
-                    copyOfSetOfTime -= {7}
-                elif copyOfSetOfTime & {8} == {8}:
-                    begin = 8
-                    end = 8
-                    copyOfSetOfTime -= {8}
-                elif copyOfSetOfTime & {9} == {9}:
-                    begin = 9
-                    end = 9
-                    copyOfSetOfTime -= {9}
-                elif copyOfSetOfTime & {10} == {10}:
-                    begin = 10
-                    end = 10
-                    copyOfSetOfTime -= {10}
-                elif copyOfSetOfTime & {11} == {11}:
-                    begin = 11
-                    end = 11
-                    copyOfSetOfTime -= {11}
-
-                # 很不明白为什么会有 12 节，但是有的课表确实存在。
-                elif copyOfSetOfTime & {12} == {12}:
-                    copyOfSetOfTime -= {12}
-
-                # print(begin, end)
-                detailedClassList.append(
-                    {
-                        "name": e["name"],
-                        # "type": e['type'],
-                        "teacher": e["teacher"],
-                        "location": e["location"],
-                        # "detail": e['detail'],
-                        "累计开学天数": (week - 1) * 7 + e["day"],
-                        "begin": begin,
-                        "end": end,
-                    }
-                )
-
-            # print(listOfTime)
-    # print(detailedClassList)
-    print("处理课程数据成功")
-    return detailedClassList
+    print("生成 ics 文件成功")
 
 
 def getUser():
@@ -413,37 +154,23 @@ def getUser():
     return (user["userName"], user["password"], md5)
 
 
-def main():
-    userName, password, md5 = getUser()
+async def getCalendar(userName, password, md5):
+    async with aiohttp.ClientSession() as session:
+        loginHelper = LoginHelper(session)
+        isSccessful = await loginHelper.login(userName, password)
 
-    html = getHTML(userName, password)
-    classList = parseHTML(html)
-    detailedClassList = getDetailedClassList(classList)
+        if not isSccessful:
+            return False
 
-    getExamHtml()
-    list2ics(md5, detailedClassList)
+        courseHtmlDownloader = CourseTableDownloader(session)
+        html = await courseHtmlDownloader.getHtml()
 
+    courseHtmlParser = CourseHtmlParser(html)
+    courseList = await courseHtmlParser.getCoursesList()
 
-def getExamHtml():
-    userName, password, md5 = getUser()
-
-    url = routerUrl["examHTML"]
-
-    payload = {"xnxqid": termId}
-
-    html = requests.post(url, data=payload, cookies=getCookies(userName, password)).text
-    print(html)
-    return html
-
-
-def getCalendar(userName, password, md5):
-    html = getHTML(userName, password)
-    classList = parseHTML(html)
-    detailedClassList = getDetailedClassList(classList)
-
-    list2ics(md5, detailedClassList, isRunByServer=True)
+    list2ics(md5, courseList, isRunByServer=True)
     return True
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

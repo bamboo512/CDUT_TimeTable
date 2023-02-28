@@ -1,4 +1,3 @@
-pytz
 icalendar
 requests
 bs4
@@ -8,4 +7,4 @@ mysql-connector-python
 uvicorn
 aiofiles
 pycryptodome
-
+ddddocr

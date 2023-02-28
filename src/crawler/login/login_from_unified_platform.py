@@ -1,6 +1,5 @@
-from webbrowser import get
 import aiohttp
-from util import encryptPassword, get_config
+from util import encryptPassword, get_config, get_verify_code
 import asyncio
 
 config = get_config()
@@ -17,6 +16,7 @@ async def uni_get_public_key():
             return result
 
 
+# 从砚湖易办 的统一身份认证登录
 async def uni_login(username, password):
     url = config["统一身份认证"]["loginUrl"]
 
@@ -26,7 +26,6 @@ async def uni_login(username, password):
     formData = aiohttp.FormData()
     formData.add_field("username", username)
     formData.add_field("password", password)
-    formData.add_field("captcha", "")
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, data=formData) as resp:
