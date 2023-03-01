@@ -7,11 +7,9 @@ config = get_config()
 
 
 class ExamHtmlParser:
-    rawHtml: str = None
-    examList: list = []
-
     def __init__(self, rawHtml) -> None:
         self.rawHtml = rawHtml
+        self.examList = []
 
     def parseHtml(self):
         soup = bs(self.rawHtml, "html.parser")
@@ -25,7 +23,7 @@ class ExamHtmlParser:
             listOfChildren = list(e.children)
 
             # 若不存在考试
-            if len(listOfChildren) <= 1:
+            if len(listOfChildren) <= 10:
                 continue
 
             # 正常逻辑
@@ -34,7 +32,7 @@ class ExamHtmlParser:
 
             self.examList.append(
                 {
-                    "name": listOfChildren[11].text,
+                    "name": config["examPreffix"] + listOfChildren[11].text,
                     "teacher": listOfChildren[13].text,
                     "datetime": listOfChildren[15].text,
                     "location": listOfChildren[17].text,
@@ -45,14 +43,15 @@ class ExamHtmlParser:
     def parseTime(self):
         for i in range(len(self.examList)):
             (
-                self.examList[i]["startTime"],
-                self.examList[i]["endTime"],
+                self.examList[i]["startDateTime"],
+                self.examList[i]["endDateTime"],
             ) = self.timeParser(self.examList[i]["datetime"])
 
-    def getExamList(self):
+    async def getExamList(self):
         self.parseHtml()
         self.parseTime()
         print(self.examList)
+
         return self.examList
 
     def timeParser(self, timeToParse):

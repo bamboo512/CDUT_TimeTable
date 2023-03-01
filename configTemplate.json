@@ -1,14 +1,29 @@
 {
-  "userName": "你的学号",
-  "password": "你的新教务处密码（非砚湖易办的）",
-  "firstDay": "2022-8-29",
-  "termId": "2022-2023-1",
-  "db": {
-    "host": "localhost",
-    "user": "root",
-    "port": 3306,
-    "password": "数据库密码",
-    "database": "数据库名称"
+  "termId": "2022-2023-2",
+  "firstDayInOneTerm": {
+    "year": 2023,
+    "month": 2,
+    "day": 20
   },
-  "backendUrl": "webcal://time.stariver.xyz/api/time"
+
+  "db": {
+    "host": "数据库地址",
+    "port": 3306,
+    "user": "数据库用户名",
+    "password": "数据库密码",
+    "database": "timetable"
+  },
+  "backendUrl": "webcal://time.stariver.xyz/api",
+  "统一身份认证": {
+    "publicKeyUrl": "https://cas.paas.cdut.edu.cn/cas/jwt/publicKey",
+    "loginUrl": " https://cas.paas.cdut.edu.cn/cas/login?service=http%3A%2F%2Fjw.cdut.edu.cn%2Fsso%2Flogin.jsp%3FtargetUrl%3Dbase64aHR0cDovL2p3LmNkdXQuZWR1LmNuL0xvZ29uLmRvP21ldGhvZD1sb2dvblNTT2NkbGdkeA%3D%3D"
+  },
+  "jw_api_path": {
+    "baseUrl": "https://jw.cdut.edu.cn",
+    "examHTML": "/jsxsd/xsks/xsksap_list",
+    "preconditionCode": "/Logon.do?method=logon&flag=sess",
+    "login": "/Logon.do?method=logon",
+    "courseTableHTML": "/jsxsd/xskb/xskb_list.do"
+  },
+  "examPreffix": "[考试]"
 }

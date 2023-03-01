@@ -1,27 +1,23 @@
 from bs4 import BeautifulSoup as bs
-
-
-import crawler.util
 import re
 
 
 class CourseHtmlParser:
-    rawHtml = None
-    dilutedCoursesList: list = []
-    detailedClassList: list = []
-
     def __init__(self, rawHtml):
+        print("初始化 CourseHtmlParser")
+        self.dilutedCoursesList = []
+        self.courseList = []
         self.rawHtml = rawHtml
 
     async def getCoursesList(self):
         await self.parseHTML()
         self.removeDuplicateClass()
         self.getDetailedClassList()
-        print(self.detailedClassList)
-        return self.detailedClassList
+        print(self.courseList)
+
+        return self.courseList
 
     async def parseHTML(self):
-
         soup = bs(self.rawHtml, "html.parser")
         table = soup.find("table", attrs={"id": "timetable"})
         rows = table.find_all("tr")
@@ -54,7 +50,7 @@ class CourseHtmlParser:
 
                 coursesInATableElement = []
                 listOfChildren = list(course.children)
-                for (i, e) in enumerate(listOfChildren):
+                for i, e in enumerate(listOfChildren):
                     if i == 1:
                         coursesInATableElement.append(e.text)
                     elif e == "---------------------":
@@ -100,10 +96,8 @@ class CourseHtmlParser:
                 # print(setOfWeek, setOfTime)
 
                 for week in setOfWeek:
-
                     copyOfSetOfTime = setOfTime.copy()  # 需要浅拷贝，因为后面会改变值
                     while len(copyOfSetOfTime) > 0:
-
                         begin, end = 1, 2
                         if copyOfSetOfTime & {1, 2, 3, 4} == {1, 2, 3, 4}:
                             begin = 1
@@ -187,7 +181,7 @@ class CourseHtmlParser:
                             copyOfSetOfTime -= {12}
 
                         # print(begin, end)
-                        self.detailedClassList.append(
+                        self.courseList.append(
                             {
                                 "name": e["name"],
                                 # "type": e['type'],
@@ -244,23 +238,12 @@ class CourseHtmlParser:
 
     def sortDetailedClassList(self) -> list:
         # 按照累计开学天数、开始的时间序号排序
-        self.detailedClassList.sort(key=lambda x: (x["累计开学天数"], x["begin"]))
+        self.courseList.sort(key=lambda x: (x["累计开学天数"], x["begin"]))
 
     def concatenateAdjacentCourses(self):
-        for i in range(self.detailedClassList):
-            if (
-                self.detailedClassList[i]["name"]
-                == self.detailedClassList[i + 1]["name"]
-            ):
-                if (
-                    self.detailedClassList["累计开学天数"]
-                    == self.detailedClassList[i + 1]["累计开学天数"]
-                ):
-                    if (
-                        self.detailedClassList["end"]
-                        == self.detailedClassList[i + 1]["begin"] - 1
-                    ):
-                        self.detailedClassList[i]["end"] = self.detailedClassList[
-                            i + 1
-                        ]["end"]
-                        self.detailedClassList.pop(i + 1)
+        for i in range(self.courseList):
+            if self.courseList[i]["name"] == self.courseList[i + 1]["name"]:
+                if self.courseList["累计开学天数"] == self.courseList[i + 1]["累计开学天数"]:
+                    if self.courseList["end"] == self.courseList[i + 1]["begin"] - 1:
+                        self.courseList[i]["end"] = self.courseList[i + 1]["end"]
+                        self.courseList.pop(i + 1)
