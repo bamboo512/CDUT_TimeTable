@@ -1,4 +1,4 @@
-from util import get_config, get_verify_code
+from backend.util import get_config, get_verify_code
 import aiohttp
 
 
@@ -56,11 +56,11 @@ class LoginHelper:
             if response.status == 200:
                 url = str(response.url)
                 if url == "https://jw.cdut.edu.cn/jsxsd/framework/xsMainV.htmlx":
-                    print(userName, "获取 Cookie 成功")
+                    print(userName, "登录成功")
                     return True
-                else:
-                    print(userName, "获取 Cookie 失败")
-                    return False
+            else:
+                print(userName, "登录失败")
+                return False
 
     # ! 需在登录之前先获取 Cookie 与 一些数据，以供登录时使用
     async def getPreconditionLoginCode(self):

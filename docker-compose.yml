@@ -1,4 +1,22 @@
-version: 3.9
+version: "3.9"
 
 services:
-  
+  timetable:
+    image: timetable
+    container_name: timetable
+    restart: always
+    ports:
+      - "6777:6777"
+      - "7666:7666"
+    environment:
+      - TZ="Asia/Shanghai"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - ./config.json:/app/config.json
+      - ./timetable:/app/timetable
+
+  ocr_server:
+    ports:
+      - "9898:9898"
+    image: ocr_server:v1
+    restart: always

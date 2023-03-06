@@ -1,11 +1,10 @@
 icalendar
-requests
 bs4
 fastapi
 pydantic
 mysql-connector-python
 uvicorn
-aiofiles
 pycryptodome
-ddddocr
 aiohttp
+# grpcio
+# ddddocr

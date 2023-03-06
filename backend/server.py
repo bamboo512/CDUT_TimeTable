@@ -2,14 +2,14 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from util import generate_md5
-from dao.UserDAO import UserDAO
-from vo.user import User
-from util import get_config
+from backend.util import generate_md5
+from backend.dao.UserDAO import UserDAO
+from backend.vo.user import User
+from backend.util import get_config
 import os
 import aiohttp
-from crawler.login.LoginHelper import LoginHelper
-from timetable import getCalendar
+from backend.crawler.login.LoginHelper import LoginHelper
+from backend.timetable import getCalendar
 
 BACKEND_URL = get_config().get("backendUrl")
 
@@ -57,7 +57,6 @@ async def sign_up(payload: User):
 
 @app.get("/api/ics/{md5}")
 async def get_icalendar(md5: str):
-
     user = userDb.getUserByMd5(md5)
     filePath = f"timetable/{md5}.ics"
     print(user.userName)

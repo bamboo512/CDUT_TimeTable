@@ -1,10 +1,9 @@
-from util import get_config
+from backend.util import get_config
 import mysql.connector
-from vo.user import User
+from backend.vo.user import User
 
 
 class UserDAO:
-
     config = get_config().get("db")
 
     def __init__(self):
@@ -71,7 +70,6 @@ class UserDAO:
         db.close()
 
         if result:
-
             user = User(
                 userName=result[0],
                 password=result[1],

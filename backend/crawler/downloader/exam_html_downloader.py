@@ -1,4 +1,4 @@
-from util import get_config
+from backend.util import get_config
 
 config = get_config()
 

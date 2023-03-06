@@ -1,21 +1,55 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.10
+# FROM python:3.8-alpine
+FROM python:3.10-alpine
 
-WORKDIR /code
+# ! Alpine 换源
+RUN echo "http://mirrors.aliyun.com/alpine/latest-stable/main/" > /etc/apk/repositories && \
+    echo "http://mirrors.aliyun.com/alpine/latest-stable/community/" >> /etc/apk/repositories
+RUN apk update
 
-COPY ./requirements.txt /code/requirements.txt
-
-# change pip source, if you are in China
-RUN pip config set global.index-url http://mirrors.cloud.tencent.com/pypi/simple
-RUN pip config set global.trusted-host mirrors.cloud.tencent.com
-
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
-
-COPY ./src /code/app
+# ! Debian 换源
+# RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+# RUN apt-get update
 
 
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+WORKDIR /app
 
-# If running behind a proxy like Nginx or Traefik add --proxy-headers
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7666", --proxy-headers]
+# ! Frontend
+RUN apk add --no-cache nginx
+
+COPY ./nginx/default.conf  /etc/nginx/conf.d/
+
+COPY ./frontend/dist  /usr/share/nginx/html/
+
+
+# # ! Backend
+# COPY ./requirements.txt /app/requirements.txt
+# COPY ./backend /app/backend
+
+# # RUN python -m ensurepip
+
+# # add binaries installed by pip to path 
+# ENV PATH="/root/.local/bin:${PATH}"
+
+
+# # change pip source, if you are in China
+# RUN python -m pip config set global.index-url https://mirrors.cloud.tencent.com/pypi/simple
+# RUN python -m pip config set global.trusted-host mirrors.cloud.tencent.com
+
+# RUN python -m pip install --no-cache-dir --upgrade -r /app/requirements.txt
+
+
+
+# # CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7666"]
+
+# # If running behind a proxy like Nginx or Traefik add --proxy-headers
+
+# CMD ["uvicorn", "backend.server:app", "--host", "0.0.0.0", "--port", "7666", "--proxy-headers"]
+
+
+
+
+
+
+
