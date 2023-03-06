@@ -1,4 +1,4 @@
-from backend.util import get_config
+from util import get_config
 
 import re
 

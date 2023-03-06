@@ -1,6 +1,6 @@
-from backend.util import get_config
+from util import get_config
 import mysql.connector
-from backend.vo.user import User
+from vo.user import User
 
 
 class UserDAO:

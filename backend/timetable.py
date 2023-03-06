@@ -1,10 +1,10 @@
 import aiohttp
-from backend.converter.timetable_to_ics import TimetableToICalendar
-from backend.crawler.downloader.course_table_downloader import CourseTableDownloader
-from backend.crawler.login.LoginHelper import LoginHelper
-from backend.crawler.parser.course_html_parser import CourseHtmlParser
-from backend.crawler.parser.exam_html_parser import ExamHtmlParser
-from backend.crawler.downloader.exam_html_downloader import ExamHtmlDownloader
+from converter.timetable_to_ics import TimetableToICalendar
+from crawler.downloader.course_table_downloader import CourseTableDownloader
+from crawler.login.LoginHelper import LoginHelper
+from crawler.parser.course_html_parser import CourseHtmlParser
+from crawler.parser.exam_html_parser import ExamHtmlParser
+from crawler.downloader.exam_html_downloader import ExamHtmlDownloader
 
 
 async def getCalendar(userName, password, md5):

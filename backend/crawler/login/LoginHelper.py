@@ -1,4 +1,4 @@
-from backend.util import get_config, get_verify_code
+from util import get_config, get_verify_code
 import aiohttp
 
 

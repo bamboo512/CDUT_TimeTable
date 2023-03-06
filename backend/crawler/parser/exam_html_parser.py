@@ -1,4 +1,4 @@
-from backend.util import get_config
+from util import get_config
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 from zoneinfo import ZoneInfo

@@ -4,7 +4,7 @@ from uuid import uuid1
 from zoneinfo import ZoneInfo
 
 
-from backend.util import get_config
+from util import get_config
 
 config = get_config()
 

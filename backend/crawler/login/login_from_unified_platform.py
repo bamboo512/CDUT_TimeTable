@@ -1,4 +1,4 @@
-from backend.util import encryptPassword, get_config
+from util import encryptPassword, get_config
 import asyncio
 
 config = get_config()
