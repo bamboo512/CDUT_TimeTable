@@ -23,18 +23,18 @@ config = get_config()
 
 async def get_verify_code(session):
     """获取验证码"""
-    # ocr = ddddocr.DdddOcr(show_ad=False)
+    ocr = ddddocr.DdddOcr(show_ad=False)
 
     url = "https://jw.cdut.edu.cn/verifycode.servlet?t=0.5"
     async with session.get(url) as resp:
         if resp.status == 200:
             image = await resp.read()
             payload = {"image": image}
-            # res = ocr.classification(image)
-            # return res
-            async with session.post(config["ddddocr_path"], data=payload) as resp1:
-                result = await resp1.text()
-                return result
+            res = ocr.classification(image)
+            return res
+            # async with session.post(config["ddddocr_path"], data=payload) as resp1:
+            #     result = await resp1.text()
+            #     return result
         else:
             print(resp.status)
             return None

@@ -6,5 +6,4 @@ mysql-connector-python
 uvicorn
 pycryptodome
 aiohttp
-# grpcio
-# ddddocr
+ddddocr
