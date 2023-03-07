@@ -2,7 +2,7 @@
 
 ⚡️ 能从 CDUT 新版教务系统高效、便捷地生成订阅日历的工具。
 
-仅需在 [此网站](https://time.pytbt.xyz) 轻轻输入你的学号与新教务处密码，不过须臾便可导入课程表订阅到日历。
+仅需在 [此网站](https://time.stariver.xyz) 轻轻输入你的学号与新教务处密码，不过须臾便可导入课程表订阅到日历。
 
 请特别关注：订阅日历能每两天 **自动同步** 教务系统课程表的 **变更**。
 
@@ -21,7 +21,7 @@
 
 ### 使用指北 - 日历订阅
 
-1. 仅需在 [此网站](https://time.pytbt.xyz) 输入你的学号与新教务处密码。
+1. 仅需在 [此网站](https://time.stariver.xyz) 输入你的学号与新教务处密码。
 
 >   ⚠️  这个密码一定不会是你的身份证后 6 位，因为第一次登录会强制要求改密码。
 >
@@ -39,40 +39,6 @@
 
 ![IMG_6646](images/IMG_6646.jpeg)
 
-
-
-### 使用指北 - 本地命令行
-
-1. 克隆此项目到本地。
-
-2. 确保你的电脑已安装 Python 3+ 与 pip 包管理器。
-
-3. 在项目文件夹内运行以下命令。
-
-```Shell
-pip install -r requirements.txt
-```
-
-4. 在 config.json 输入你的学号与密码。
-
-    将 configTemplate.json 重命名为 config.json，在 userName 后输入你的学号，password 后输入你的密码。
-
-    > **请特别关注**
-    >
-    > 首次登录新教务处网站时会要求更改密码，请更改密码后再次尝试使用此工具。
-    >
-    > 这个密码可能与砚湖易办的不同，请以能以登录 https://jw.cdut.edu.cn/jsxsd/ 为准。初始密码为身份证后六位。
-
-5. 运行 timetable.py。执行以下代码：
-
-```Shell
-python timetable.py
-```
-
-6. 导入 ics 进日历。如果一切正常，在项目文件夹下会生成 `:你的学号.ics` 文件。
-    使用日历打开此 ics 文件，即可导入课表信息。
-
-  不同平台导入 ics 文件的流程，请参考 **此文档** -> **额外的信息** -> **如何导入到日历？**。
 
 
 
@@ -106,16 +72,17 @@ python timetable.py
 
 -    运行服务器。你有以下两种选择。
 
-    -   直接运行 `python main.py`。
-    -   在终端运行命令：`uvicorn main:app --reload --host 0.0.0.0 --port 8000`。
+    -   在项目文件夹直接运行 `python main.py`。
+    -   在终端运行命令：`uvicorn backend.server:app --reload  --port 7669`。
 
--    在浏览器访问 [http://localhost:8000/](http://localhost:8000/)，如果出现 `{"detail":"Not Found"}` 就说明你已配置成功。
+-    在浏览器访问 [http://localhost:7669/](http://localhost:7669/)，如果出现 `{"detail":"Not Found"}` 就说明你已配置成功。
 
 ​    
 
-6. 配置前端服务器。
+1. 配置前端服务器。
 
--   克隆并进入仓库 [timetable-frontend]() 项目目录。
+-   进入仓库 frontend 目录。
+-   更改 frontend/src/store/index.js 中的 `backendUrl` 为 `http://localhost:7669`。
 
 -   安装依赖。在终端运行
 
@@ -156,8 +123,7 @@ python timetable.py
     -   运行生成的 dist。
 
         >   生成的 dist 是纯静态资源，能提供 http 服务的服务器都能运行。
-        >
-        >   你不仅可以用 nginx、caddy、express.js(基于 Node.js 的服务器) 等服务器运行 dist，你还能直接用浏览器打开 index.html 文件以运行。
+        >   你可以使用 nginx、caddy、express.js(基于 Node.js 的服务器) 等服务器部署 dist 文件夹。
 
         这里我们选择使用 `serve`。
 
@@ -183,15 +149,15 @@ python timetable.py
 
     
 
-### 本地命令行程序运行流程
+### 程序运行流程
 
-1.   获取 Cookie
-     - 预获取 Precondition Cookies 与 登录辅助 Code。
+1.   登录
+     - 预获取 Precondition Cookies 与 public Key。
      
-     - 根据官网登录流程，使用辅助 Code 加密密码。
+     - 根据官网登录流程，使用 public Key 加密密码。
      
-     - 登录，获取最终 Cookie。
-2.   获取课表的 HTML 表格。
+     - 登录，保留 session 直到获取完课程与考试信息。
+2.   在此次 Session 获取课表与考试信息的 HTML 表格。
 3.   解析 HTML 表格，得到原始课程信息。
 4.   分析原始课程信息，将其转换为含有明确开始、结束节数的列表。
 5.   根据列表生成 ics 文件。
