@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 
-@app.post("/api/signup")
+@app.post("/signup")
 async def sign_up(payload: User):
     userName = payload.userName
     password = payload.password
@@ -55,7 +55,7 @@ async def sign_up(payload: User):
         return {"code": -2, "message": "登录失败，无法将用户信息写入数据库"}
 
 
-@app.get("/api/ics/{md5}")
+@app.get("/ics/{md5}")
 async def get_icalendar(md5: str):
     user = userDb.getUserByMd5(md5)
     filePath = f"timetable/{md5}.ics"
