@@ -14,12 +14,12 @@
                 <label for="userName" class="font-bold text-lg my-1 text-slate-700 dark:text-slate-100">学号</label>
                 <input type="text"
                     class="
-                                                                                                                                        border border-slate-200
-                                                                                                                                        rounded
-                                                                                                                                        p-2
-                                                                                                                                        outline-none
-                                                                                                                                        focus:border-blue-400 focus:border-1 focus:bg-white
-                                                                                                                                    "
+                                                                                                                                                border border-slate-200
+                                                                                                                                                rounded
+                                                                                                                                                p-2
+                                                                                                                                                outline-none
+                                                                                                                                                focus:border-blue-400 focus:border-1 focus:bg-white
+                                                                                                                                            "
                     id="userName" v-model="userName" placeholder="你的学号" />
             </div>
 
@@ -91,7 +91,7 @@ export default {
 
             // ! 提交 
 
-            let url = this.$store.state.backendUrl + "/api/signup";
+            let url = this.$store.state.backendUrl + "/signup";
 
             let payload = {
                 method: "POST",

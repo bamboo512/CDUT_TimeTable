@@ -4,6 +4,7 @@ timetable/
 config.json
 **/node_modules/
 **/dist/
+**/html/
 # local env files
 frontend/.env.local
 frontend/.env.*.local
