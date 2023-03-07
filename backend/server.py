@@ -66,7 +66,7 @@ async def get_icalendar(md5: str):
 
     elif (
         user.lastRefreshTime is None
-        or abs(user.lastRefreshTime - datetime.now()) > timedelta(days=0)
+        or abs(user.lastRefreshTime - datetime.now()) > timedelta(days=7)
         or not os.path.exists(filePath)
     ):
         now = datetime.now()
