@@ -14,12 +14,12 @@
                 <label for="userName" class="font-bold text-lg my-1 text-slate-700 dark:text-slate-100">学号</label>
                 <input type="text"
                     class="
-                                                                                                                                                border border-slate-200
-                                                                                                                                                rounded
-                                                                                                                                                p-2
-                                                                                                                                                outline-none
-                                                                                                                                                focus:border-blue-400 focus:border-1 focus:bg-white
-                                                                                                                                            "
+                                                                                                                                                            border border-slate-200
+                                                                                                                                                            rounded
+                                                                                                                                                            p-2
+                                                                                                                                                            outline-none
+                                                                                                                                                            focus:border-blue-400 focus:border-1 focus:bg-white
+                                                                                                                                                        "
                     id="userName" v-model="userName" placeholder="你的学号" />
             </div>
 
@@ -73,7 +73,7 @@ export default {
                 validateMessage += "密码不能为空<br/>";
             }
 
-            if (userName && !/^[f,F]{0,1}\d{12}$/.test(userName)) {
+            if (userName && !/^[f,F]{0,1}(\d{10}|\d{12})$/.test(userName)) {
                 validateMessage += "学号格式不正确<br/>";
             }
             if (userName && !/^.{6,32}$/.test(password)) {

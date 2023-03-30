@@ -1,6 +1,7 @@
 timetable/
 **/__pycache__/
 .DS_Store
+._*
 config.json
 **/node_modules/
 **/dist/

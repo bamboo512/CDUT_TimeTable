@@ -2,9 +2,9 @@
   <keep-alive>
     <router-view :key="$route.fullPath" />
   </keep-alive>
-  <div class="fixed bottom-2">
-    蜀 ICP 备 2022026512 号
-  </div>
+  <a href="https://beian.miit.gov.cn" class="fixed bottom-2 hover:underline underline-offset-4">
+    蜀 ICP 备 2022026512 号 - 1
+  </a>
 </template>
 
 <style lang="scss">
